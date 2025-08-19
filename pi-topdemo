@@ -1,0 +1,104 @@
+# ------------------------------------------------------
+# Pi-Top [4] Robotics Kit - Example Integrated Script
+# ------------------------------------------------------
+# Features:
+# 1. Drives forward using motor encoders.
+# 2. Uses ultrasonic sensor to detect obstacles < 7 inches (≈ 18 cm).
+#    -> Turns left if obstacle is detected.
+# 3. Moves a servo motor back and forth (0° to 180°).
+# 4. Uses the camera to detect red objects.
+#    -> If a red object is found, snap a photo.
+# 5. Runs for 60 seconds, then stops everything.
+# ------------------------------------------------------
+
+from pitop.robotics import DriveController, EncoderMotor, ServoMotor, UltrasonicSensor
+from pitop.camera import Camera
+from pitop.processing.vision import ColorDetector
+import cv2
+import time
+
+# -----------------------------
+# Setup Hardware
+# -----------------------------
+
+# Encoders (drive motors) - left and right wheels
+left_motor = EncoderMotor("M0")   # M0 = motor port 0
+right_motor = EncoderMotor("M1")  # M1 = motor port 1
+drive = DriveController(left_motor, right_motor)
+
+# Ultrasonic sensor (distance detection)
+ultrasonic = UltrasonicSensor("D0")   # D0 = digital port 0
+
+# Servo motor (connected to S0)
+servo = ServoMotor("S0")
+
+# Camera for object detection
+camera = Camera()
+color_detector = ColorDetector(hue=(0, 10))  
+# Hue range ~0-10 = red tones in HSV space
+
+# -----------------------------
+# Helper Functions
+# -----------------------------
+
+def check_for_red(frame):
+    """
+    Checks camera frame for red object using ColorDetector.
+    Returns True if red detected, else False.
+    """
+    mask = color_detector.create_mask(frame)
+    # Count nonzero pixels in mask
+    red_pixels = cv2.countNonZero(mask)
+    return red_pixels > 500  # threshold: enough red present
+
+
+def sweep_servo():
+    """
+    Moves servo back and forth from 0° to 180°.
+    """
+    for angle in [0, 180]:
+        servo.target_angle = angle
+        time.sleep(1)
+
+
+# -----------------------------
+# Main Program Loop
+# -----------------------------
+start_time = time.time()
+stop_time = 60  # seconds
+
+print("Starting robot program...")
+
+with camera:
+    while time.time() - start_time < stop_time:
+        # 1. Drive forward slowly
+        drive.forward(0.3)  # speed (0 to 1)
+
+        # 2. Check ultrasonic sensor (convert cm → inches)
+        distance_cm = ultrasonic.distance
+        distance_in = distance_cm / 2.54
+
+        if distance_in < 7:
+            print("Obstacle detected! Turning left...")
+            drive.stop()
+            drive.backward(0.3)    # back up a little
+            time.sleep(0.5)
+            drive.left(0.5)        # turn left
+            time.sleep(1)
+            drive.stop()
+
+        # 3. Servo motion (sweep back and forth)
+        sweep_servo()
+
+        # 4. Camera check for red object
+        frame = camera.get_frame()
+        if check_for_red(frame):
+            print("Red object detected! Taking photo...")
+            cv2.imwrite("red_object.jpg", frame)
+            # Optional: stop after taking picture
+            # break
+
+    # After loop finishes
+    drive.stop()
+    servo.target_angle = 90  # reset to center
+    print("Program finished. Motors stopped.")
