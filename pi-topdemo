@@ -11,7 +11,7 @@
 # 5. Runs for 60 seconds, then stops everything.
 # ------------------------------------------------------
 
-from pitop.robotics import DriveController, EncoderMotor, ServoMotor, UltrasonicSensor
+from pitop.robotics import DriveController, EncoderMotor, BrakingType, ForwardDirection, ServoMotor, UltrasonicSensor
 from pitop.camera import Camera
 from pitop.processing.vision import ColorDetector
 import cv2
@@ -22,9 +22,10 @@ import time
 # -----------------------------
 
 # Encoders (drive motors) - left and right wheels
-left_motor = EncoderMotor("M0")   # M0 = motor port 0
-right_motor = EncoderMotor("M1")  # M1 = motor port 1
+left_motor = EncoderMotor("M0", ForwardDirection.COUNTER_CLOCKWISE)
+right_motor = EncoderMotor("M3", ForwardDirection.CLOCKWISE)
 drive = DriveController(left_motor, right_motor)
+motor.braking_type = BrakingType.COAST
 
 # Ultrasonic sensor (distance detection)
 ultrasonic = UltrasonicSensor("D0")   # D0 = digital port 0
