@@ -8,14 +8,14 @@ Use asyncio to run functions all at once, make a function
 to check for keyboard inputs, use encoder motors for 
 movement (increase speed on one wheel for turning), use
 servo motor to control angle of camera, and use c for a
-picture and v for a video. If possible, put camera 
+picture and. If possible, put camera 
 up on the main screen for easy live view.
 
 Basic Controls:
 Movement - WASD
 Camera - Left and Right Arrow Keys
-C - Take picture
-V - Start/Stop Video
+Take Picture - C
+Exit Program- Escape
 
 I use Regions to easily organize my code in Visual Studio Code,
 so if you use anything else, dont think im crazy.
@@ -23,8 +23,8 @@ so if you use anything else, dont think im crazy.
 
 #region Imports
 """Remove comments below before testing on pi-top"""
-# from pitop import DriveController, EncoderMotor, BrakingType, ForwardDirection, ServoMotor, UltrasonicSensor, ServoMotorSetting, Camera, KeyboardButton
-#from pitop.system.devices import USBCamera
+from pitop import DriveController, EncoderMotor, BrakingType, ForwardDirection, ServoMotor, UltrasonicSensor, ServoMotorSetting, Camera, KeyboardButton
+from pitop.system.devices import USBCamera
 
 #cv2 to show live footage, numpy to help show live footage, Asyncio to run everything all together, Time.Sleep to stop program for any breaks, sys for clean exits
 import cv2, numpy as np, asyncio as aio, time, sys
@@ -35,20 +35,20 @@ import cv2, numpy as np, asyncio as aio, time, sys
 #region Variables
 
 #Pi-Top Variables (Uncomment the variables before testing with pitop)
-#lm_motor = EncoderMotor("M1")
-#rm_motor = EncoderMotor("M2")
-#cam = Camera()
-#camera_servo = ServoMotor("S1")
-#ultrasonic_sensor = UltrasonicSensor("U1")
-#w = KeyboardButton("W")
-#a = KeyboardButton("A")
-#s = KeyboardButton("S")
-#d = KeyboardButton("D")
-#left = KeyboardButton("left")
-#right = KeyboardButton("right")
-#c = KeyboardButton("C")
-#v = KeyboardButton("V")
-#escape = KeyboardButton("escape")
+lm_motor = EncoderMotor("M1")
+rm_motor = EncoderMotor("M2")
+cam = Camera()
+camera_servo = ServoMotor("S1")
+ultrasonic_sensor = UltrasonicSensor("U1")
+w = KeyboardButton("W")
+a = KeyboardButton("A")
+s = KeyboardButton("S")
+d = KeyboardButton("D")
+left = KeyboardButton("left")
+right = KeyboardButton("right")
+c = KeyboardButton("C")
+v = KeyboardButton("V")
+escape = KeyboardButton("escape")
 
 #Constant variables that don't need change, therefore don't need to be inside the Shared State
 
