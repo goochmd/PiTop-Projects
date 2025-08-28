@@ -1,6 +1,6 @@
 """
 This is meant to be a simple starter program using pi-top,
-along with time, keyboard, asyncio, to have basic control
+along with time, numpy, asyncio, cv2, and sys, to have basic control
 over the robot using keybinds on a remote system.
 
 Basic Idea:
