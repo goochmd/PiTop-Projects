@@ -40,15 +40,7 @@ lm_motor = EncoderMotor("M2", ForwardDirection.CLOCKWISE)
 rm_motor = EncoderMotor("M3", ForwardDirection.COUNTER_CLOCKWISE)
 cam = Camera()
 camera_servo = ServoMotor("S0")
-w = KeyboardButton("W")
-a = KeyboardButton("A")
-s = KeyboardButton("S")
-d = KeyboardButton("D")
-left = KeyboardButton("left")
-right = KeyboardButton("right")
-c = KeyboardButton("C")
-v = KeyboardButton("V")
-escape = KeyboardButton("escape")
+keys_held = set()  # To keep track of currently held keys
 
 #Constant variables that don't need change, therefore don't need to be inside the Shared State
 motorpower = .8
@@ -67,47 +59,53 @@ state = {
 
 #endregion
 
-#region Keyboard Handling
+#Region Keyboard Handling
+
 def keyboard_listener(button, event_type):
     if event_type == "press":
-        if button == "w":
-            state["lm_speed"] = min(motorpower, state["lm_speed"] + speedrate)
-            state["rm_speed"] = min(motorpower, state["rm_speed"] + speedrate)
-        elif button == "s":
-            state["lm_speed"] = max(-motorpower, state["lm_speed"] - speedrate)
+        keys_held.add(button)
+    elif event_type == "release":
+        keys_held.discard(button)
+
+#region Variable Setting
+async def variable_setter():
+    if 'w' not in keys_held and 's' not in keys_held or 'w' in keys_held and 's' in keys_held:
+        state["lm_speed"] = max(0, state["lm_speed"] - slowrate) if state["lm_speed"] > 0 else min(0, state["lm_speed"] + slowrate)
+        state["rm_speed"] = max(0, state["rm_speed"] - slowrate) if state["rm_speed"] > 0 else min(0, state["rm_speed"] + slowrate)
+    elif 'w' in keys_held:
+        state["lm_speed"] = min(motorpower, state["lm_speed"] + speedrate)
+        state["rm_speed"] = min(motorpower, state["rm_speed"] + speedrate)
+    elif 's' in keys_held:
+        state["lm_speed"] = max(-motorpower, state["lm_speed"] - speedrate)
         state["rm_speed"] = max(-motorpower, state["rm_speed"] - speedrate)
-    elif button == "a":
+    elif 'a' in keys_held:
         if state["lm_speed"] > 0 and state["rm_speed"] > 0:
             state["lm_speed"] = state["lm_speed"] * turnpower
         elif state["lm_speed"] < 0 and state["rm_speed"] < 0:
             state["rm_speed"] = state["lm_speed"] * turnpower
-    elif button == "d":
+    elif 'd' in keys_held:
         if state["lm_speed"] > 0 and state["rm_speed"] > 0:
             state["rm_speed"] = state["rm_speed"] * turnpower
         elif state["lm_speed"] < 0 and state["rm_speed"] < 0:
             state["lm_speed"] = state["rm_speed"] * turnpower
-    elif event_type == "release":
-        if button == "w" or button == "s":
-            state["lm_speed"] = max(0, state["lm_speed"] - slowrate) if state["lm_speed"] > 0 else min(0, state["lm_speed"] + slowrate)
-            state["rm_speed"] = max(0, state["rm_speed"] - slowrate) if state["rm_speed"] > 0 else min(0, state["rm_speed"] + slowrate)
     """
     Listens for keyboard inputs and updates the shared state accordingly.
     """
 
 
-    if button == "left":
+    if 'left' in keys_held:
         state["servo_angle"] = max(0, state["servo_angle"] - 5)
-    elif button == "right":
+    elif 'right' in keys_held:
          state["servo_angle"] = min(180, state["servo_angle"] + 5)
-    
-    if button == "c":
+
+    if 'c' in keys_held:
         state["take_picture"] = True
 
-    if button == "escape":
+    if 'escape' in keys_held:
         state["running"] = False
         loop = aio.get_event_loop()
         loop.call_later(1, sys.exit, 0)
-  # Small delay to prevent busy waiting
+    await aio.sleep(0.1)  # Small delay to prevent busy waiting
 
 #endregion
 
@@ -135,8 +133,8 @@ async def servo_controller():
         await aio.sleep(0.1)  # Small delay to prevent busy waiting
 
 
-#servo_settings = ServoMotorSetting()
-#servo_settings.speed = 25
+servo_settings = ServoMotorSetting()
+servo_settings.speed = 25
 
 #endregion
 
@@ -147,45 +145,21 @@ async def camera_controller():
     """
     while state["running"]:
         if state["take_picture"]:
-            cam.capture("image.jpg")
+            cam.capture("Pictures/image.jpg")
             state["take_picture"] = False
         await aio.sleep(0.1)  # Small delay to prevent busy waiting
 
 #endregion
 
-#region Live Footage
-async def live_footage():
-    print("Press 'escape' to quit live feed.")
-
-    while state["running"]:
-        # Get frame as PIL Image
-        frame = cam.get_frame()
-
-        # Convert PIL -> NumPy array (OpenCV uses BGR not RGB)
-        frame = cv2.cvtColor(np.array(frame), cv2.COLOR_RGB2BGR)
-
-        # Show in a window
-        cv2.imshow("pi-top Camera Feed", frame)
-
-        if cv2.waitKey(1) & 0xFF == 27:  # ESC pressed
-            state["running"] = False
-
-        await aio.sleep(0.1)  # Small delay to prevent busy waiting
-
 #region Main
 
 async def main():
+    aio.create_task(aio.to_thread(listen_keyboard, on_press=lambda key: keyboard_listener(key, event_type="press"), on_release=lambda key: keyboard_listener(key, event_type="release")))
     await aio.gather(
+        variable_setter(),
         motor_controller(),
         servo_controller(),
         camera_controller(),
-        live_footage(),
-        aio.create_task(aio.to_thread(listen_keyboard, on_press=lambda key: keyboard_listener(key, event_type="press"), on_release=lambda key: keyboard_listener(key, event_type="release")))
-    )
-    # Start keyboard listener with a lambda to pass event type
-    listen_keyboard(
-        on_press=lambda key: keyboard_listener(key, event_type="press"),
-        on_release=lambda key: keyboard_listener(key, event_type="release")
     )
 
 if __name__ == "__main__":
