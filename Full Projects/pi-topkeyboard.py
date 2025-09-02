@@ -26,7 +26,9 @@ so if you use anything else, dont think im crazy.
 from pitop import DriveController, EncoderMotor, BrakingType, ForwardDirection, ServoMotor, UltrasonicSensor, ServoMotorSetting, Camera, KeyboardButton
 
 #cv2 to show live footage, numpy to help show live footage, Asyncio to run everything all together, Time.Sleep to stop program for any breaks, sys for clean exits
-import cv2, numpy as np, asyncio as aio, time, sys, sshkeyboard
+import cv2, numpy as np, asyncio as aio, time, sys
+from sshkeyboard import listen_keyboard
+
 
 
 #endregion
@@ -165,6 +167,9 @@ async def live_footage():
         # Show in a window
         cv2.imshow("pi-top Camera Feed", frame)
 
+        if cv2.waitKey(1) & 0xFF == 27:  # ESC pressed
+            state["running"] = False
+
         await aio.sleep(0.1)  # Small delay to prevent busy waiting
 
 #region Main
@@ -175,6 +180,7 @@ async def main():
         servo_controller(),
         camera_controller(),
         live_footage(),
+        aio.create_task(aio.to_thread(listen_keyboard, on_press=lambda key: keyboard_listener(key, event_type="press"), on_release=lambda key: keyboard_listener(key, event_type="release")))
     )
     # Start keyboard listener with a lambda to pass event type
     listen_keyboard(
