@@ -24,10 +24,9 @@ so if you use anything else, dont think im crazy.
 #region Imports
 """Remove comments below before testing on pi-top"""
 from pitop import DriveController, EncoderMotor, BrakingType, ForwardDirection, ServoMotor, UltrasonicSensor, ServoMotorSetting, Camera, KeyboardButton
-from pitop.system.devices import USBCamera
 
 #cv2 to show live footage, numpy to help show live footage, Asyncio to run everything all together, Time.Sleep to stop program for any breaks, sys for clean exits
-import cv2, numpy as np, asyncio as aio, time, sys
+import cv2, numpy as np, asyncio as aio, time, sys, sshkeyboard
 
 
 #endregion
@@ -35,11 +34,10 @@ import cv2, numpy as np, asyncio as aio, time, sys
 #region Variables
 
 #Pi-Top Variables (Uncomment the variables before testing with pitop)
-lm_motor = EncoderMotor("M1")
-rm_motor = EncoderMotor("M2")
+lm_motor = EncoderMotor("M2")
+rm_motor = EncoderMotor("M3")
 cam = Camera()
-camera_servo = ServoMotor("S1")
-ultrasonic_sensor = UltrasonicSensor("U1")
+camera_servo = ServoMotor("S0")
 w = KeyboardButton("W")
 a = KeyboardButton("A")
 s = KeyboardButton("S")
@@ -51,12 +49,10 @@ v = KeyboardButton("V")
 escape = KeyboardButton("escape")
 
 #Constant variables that don't need change, therefore don't need to be inside the Shared State
-
-sleep = time.sleep
 motorpower = .8
 turnpower = 1.25
 slowrate = .1
-speedrate = .1
+speedrate = .01
 
 #Shared State (using a dictionary for easy access between async functions)
 state = {
@@ -70,40 +66,42 @@ state = {
 #endregion
 
 #region Keyboard Handling
-def keyboard_listener(button):
-    if button == "W":
-        state["lm_speed"] = min(motorpower, state["lm_speed"] + speedrate)
-        state["rm_speed"] = min(motorpower, state["rm_speed"] + speedrate)
-    elif button == "S":
-        state["lm_speed"] = max(-motorpower, state["lm_speed"] - speedrate)
+def keyboard_listener(button, event_type):
+    if event_type == "press":
+        if button == "w":
+            state["lm_speed"] = min(motorpower, state["lm_speed"] + speedrate)
+            state["rm_speed"] = min(motorpower, state["rm_speed"] + speedrate)
+        elif button == "s":
+            state["lm_speed"] = max(-motorpower, state["lm_speed"] - speedrate)
         state["rm_speed"] = max(-motorpower, state["rm_speed"] - speedrate)
-    elif button == "A":
-        if w.is_pressed and not s.is_pressed:
-            state["rm_speed"] = min(1, motorpower * turnpower)
-        elif s.is_pressed and not w.is_pressed:
-            state["lm_speed"] = min(1, motorpower * turnpower)
-    elif button == "D":
-        if w.is_pressed and not s.is_pressed:
-            state["lm_speed"] = min(1, motorpower * turnpower)
-        elif s.is_pressed and not w.is_pressed:
-            state["rm_speed"] = min(1, motorpower * turnpower)
-    elif button == "dW" or button == "dS":
-        state["lm_speed"] = max(0, state["lm_speed"] - slowrate)
-        state["rm_speed"] = max(0, state["rm_speed"] - slowrate)
+    elif button == "a":
+        if state["lm_speed"] > 0 and state["rm_speed"] > 0:
+            state["lm_speed"] = state["lm_speed"] * turnpower
+        elif state["lm_speed"] < 0 and state["rm_speed"] < 0:
+            state["rm_speed"] = state["lm_speed"] * turnpower
+    elif button == "d":
+        if state["lm_speed"] > 0 and state["rm_speed"] > 0:
+            state["rm_speed"] = state["rm_speed"] * turnpower
+        elif state["lm_speed"] < 0 and state["rm_speed"] < 0:
+            state["lm_speed"] = state["rm_speed"] * turnpower
+    elif event_type == "release":
+        if button == "w" or button == "s":
+            state["lm_speed"] = max(0, state["lm_speed"] - slowrate) if state["lm_speed"] > 0 else min(0, state["lm_speed"] + slowrate)
+            state["rm_speed"] = max(0, state["rm_speed"] - slowrate) if state["rm_speed"] > 0 else min(0, state["rm_speed"] + slowrate)
     """
     Listens for keyboard inputs and updates the shared state accordingly.
     """
 
 
-    if button == "LEFT":
+    if button == "left":
         state["servo_angle"] = max(0, state["servo_angle"] - 5)
-    elif button == "RIGHT":
+    elif button == "right":
          state["servo_angle"] = min(180, state["servo_angle"] + 5)
     
-    if button == "C":
+    if button == "c":
         state["take_picture"] = True
 
-    if button == "ESCAPE":
+    if button == "escape":
         state["running"] = False
         loop = aio.get_event_loop()
         loop.call_later(1, sys.exit, 0)
@@ -155,14 +153,11 @@ async def camera_controller():
 
 #region Live Footage
 async def live_footage():
-    # Initialize USB camera
-    camera = USBCamera()
-
     print("Press 'escape' to quit live feed.")
 
     while state["running"]:
         # Get frame as PIL Image
-        frame = camera.get_frame()
+        frame = cam.get_frame()
 
         # Convert PIL -> NumPy array (OpenCV uses BGR not RGB)
         frame = cv2.cvtColor(np.array(frame), cv2.COLOR_RGB2BGR)
@@ -181,17 +176,11 @@ async def main():
         camera_controller(),
         live_footage(),
     )
-
-w.when_pressed = lambda: keyboard_listener("W")
-a.when_pressed = lambda: keyboard_listener("A")
-s.when_pressed = lambda: keyboard_listener("S")
-d.when_pressed = lambda: keyboard_listener("D")
-c.when_pressed = lambda: keyboard_listener("C")
-escape.when_pressed = lambda: keyboard_listener("ESCAPE")
-left.when_pressed = lambda: keyboard_listener("LEFT")
-right.when_pressed = lambda: keyboard_listener("RIGHT")
-w.when_released = lambda: keyboard_listener("dW")
-s.when_released = lambda: keyboard_listener("dS")
+    # Start keyboard listener with a lambda to pass event type
+    listen_keyboard(
+        on_press=lambda key: keyboard_listener(key, event_type="press"),
+        on_release=lambda key: keyboard_listener(key, event_type="release")
+    )
 
 if __name__ == "__main__":
     aio.run(main())
