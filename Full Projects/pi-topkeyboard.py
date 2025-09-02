@@ -135,8 +135,8 @@ async def servo_controller():
         await aio.sleep(0.1)  # Small delay to prevent busy waiting
 
 
-#servo_settings = ServoMotorSetting()
-#servo_settings.speed = 25
+servo_settings = ServoMotorSetting()
+servo_settings.speed = 25
 
 #endregion
 
@@ -175,17 +175,12 @@ async def live_footage():
 #region Main
 
 async def main():
+    aio.create_task(aio.to_thread(listen_keyboard, on_press=lambda key: keyboard_listener(key, event_type="press"), on_release=lambda key: keyboard_listener(key, event_type="release")))
     await aio.gather(
         motor_controller(),
         servo_controller(),
         camera_controller(),
         live_footage(),
-        aio.create_task(aio.to_thread(listen_keyboard, on_press=lambda key: keyboard_listener(key, event_type="press"), on_release=lambda key: keyboard_listener(key, event_type="release")))
-    )
-    # Start keyboard listener with a lambda to pass event type
-    listen_keyboard(
-        on_press=lambda key: keyboard_listener(key, event_type="press"),
-        on_release=lambda key: keyboard_listener(key, event_type="release")
     )
 
 if __name__ == "__main__":
