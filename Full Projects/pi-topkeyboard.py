@@ -35,7 +35,7 @@ import cv2, numpy as np, asyncio as aio, time, sys, sshkeyboard
 
 #Pi-Top Variables (Uncomment the variables before testing with pitop)
 lm_motor = EncoderMotor("M2", ForwardDirection.CLOCKWISE)
-rm_motor = EncoderMotor("M3", ForwardDirection.COUNTERCLOCKWISE)
+rm_motor = EncoderMotor("M3", ForwardDirection.COUNTER_CLOCKWISE)
 cam = Camera()
 camera_servo = ServoMotor("S0")
 w = KeyboardButton("W")
