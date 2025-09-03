@@ -160,6 +160,7 @@ async def main():
         motor_controller(),
         servo_controller(),
         camera_controller(),
+        live_footage(),
     )
 
 if __name__ == "__main__":
