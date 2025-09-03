@@ -8,7 +8,7 @@ from pitop.pma import EncoderMotor, ForwardDirection
 from pitop.pma.common.encoder_motor_registers import MotorSyncBits, MotorSyncRegisters
 from pitop.pma.plate_interface import PlateInterface
 
-from .simple_pid import PID
+from simple_pid import PID
 
 logger = logging.getLogger(__name__)
 
