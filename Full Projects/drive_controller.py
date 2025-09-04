@@ -22,8 +22,8 @@ class DriveController(Stateful, Recreatable):
 
     def __init__(
         self,
-        left_motor_port: str = "M3",
-        right_motor_port: str = "M0",
+        left_motor_port: str = "M2",
+        right_motor_port: str = "M3",
         name: str = "drive",
     ):
         self.name = name
