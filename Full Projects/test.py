@@ -30,13 +30,13 @@ async def movement_loop():
     global running
     while running:
         if "w" in keys_held:
-            drive.forward(0.8)  # 80% of max speed
+            drive.forward(1)  # 80% of max speed
         elif "s" in keys_held:
-            drive.backward(0.8)
+            drive.backward(1)
         elif "a" in keys_held:
-            drive.left(0.3)  # rotate left in place
+            drive.left(0.1)  # rotate left in place
         elif "d" in keys_held:
-            drive.right(0.3)
+            drive.right(0.1)
         else:
             drive.stop()
 
