@@ -60,6 +60,8 @@ def keyboard_listener(button, event_type):
         keys_held.add(button)
     elif event_type == "release":
         keys_held.discard(button)
+    # Debugging output
+    print(f"Keys held:\n {keys_held}")
 
 #region Variable Setting
 async def variable_setter():
