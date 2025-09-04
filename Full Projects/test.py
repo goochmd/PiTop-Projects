@@ -34,9 +34,9 @@ async def movement_loop():
         elif "s" in keys_held:
             drive.backward(0.8)
         elif "a" in keys_held:
-            drive.left(0.8)  # rotate left in place
+            drive.left(0.3)  # rotate left in place
         elif "d" in keys_held:
-            drive.right(0.8)
+            drive.right(0.3)
         else:
             drive.stop()
 
