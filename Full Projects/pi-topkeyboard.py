@@ -5,10 +5,10 @@ over the robot using keybinds on a remote system.
 
 Basic Idea:
 Use asyncio to run functions all at once, make a function
-to check for keyboard inputs, use encoder motors for 
+to check for keyboard inputs, use encoder motors for
 movement (increase speed on one wheel for turning), use
 servo motor to control angle of camera, and use c for a
-picture and. If possible, put camera 
+picture and. If possible, put camera
 up on the main screen for easy live view.
 
 Basic Controls:
@@ -23,12 +23,11 @@ so if you use anything else, dont think im crazy.
 
 #region Imports
 """Remove comments below before testing on pi-top"""
-from pitop import ServoMotor, ServoMotorSetting
+from pitop import ServoMotor, ServoMotorSetting, KeyboardButton
+from pitop.robotics import DriveController
 
 #cv2 to show live footage, numpy to help show live footage, Asyncio to run everything all together, Time.Sleep to stop program for any breaks, sys for clean exits
 import cv2, numpy as np, asyncio as aio, time, sys
-from sshkeyboard import listen_keyboard
-from drive_controller import DriveController
 
 # Create the drive object
 drive = DriveController()
@@ -47,7 +46,7 @@ keys_held = set()  # To keep track of currently held keys
 
 #Shared State (using a dictionary for easy access between async functions)
 state = {
-    "servo_angle" : 90,
+    "servo_angle" : 0,
     "running" : True
 }
 
@@ -55,13 +54,44 @@ state = {
 
 #Region Keyboard Handling
 
-def keyboard_listener(button, event_type):
-    if event_type == "press":
-        keys_held.add(button)
-    elif event_type == "release":
-        keys_held.discard(button)
-    # Debugging output
-    print(f"Keys held:\n {keys_held}")
+#region Keyboard Task (using pi-top KeyboardButton events)
+
+async def keyboard_task():
+    """
+    Asyncio-compatible task that listens for pi-top KeyboardButton events
+    and updates the shared `keys_held` set accordingly.
+    """
+    # Define event handlers
+    def on_press(btn):
+        keys_held.add(btn.key)   # use button name for consistency
+        print(f"Pressed: {btn.key} | Keys held: {keys_held}")
+
+    def on_release(btn):
+        keys_held.discard(btn.key)
+        print(f"Released: {btn.name} | Keys held: {keys_held}")
+
+    # Assign callbacks to buttons you care about
+    watched_keys = [
+        KeyboardButton("w"),
+        KeyboardButton("a"),
+        KeyboardButton("s"),
+        KeyboardButton("d"),
+        KeyboardButton("j"),
+        KeyboardButton("l"),
+        KeyboardButton("c"),
+        KeyboardButton("escape"),
+    ]
+
+    for key in watched_keys:
+        key.when_pressed = on_press
+        key.when_released = on_release
+
+    # Keep this coroutine alive while program is running
+    while state["running"]:
+        await aio.sleep(0.05)
+
+#endregion
+
 
 #region Variable Setting
 async def variable_setter():
@@ -79,9 +109,9 @@ async def variable_setter():
 
         # Servo control
         if 'left' in keys_held:
-            state["servo_angle"] = max(0, state["servo_angle"] - 5)
+            state["servo_angle"] = max(-90, state["servo_angle"] - 5)
         elif 'right' in keys_held:
-            state["servo_angle"] = min(180, state["servo_angle"] + 5)
+            state["servo_angle"] = min(90, state["servo_angle"] + 5)
 
         # Exit program
         if 'escape' in keys_held:
@@ -101,7 +131,7 @@ async def servo_controller():
     Controls the servo motor based on the shared state.
     """
     while state["running"]:
-        servo.target_angle = state["servo_angle"]
+        servo.target_angle = state['servo_angle']
         await aio.sleep(0.1)  # Small delay to prevent busy waiting
 
 #endregion
@@ -109,12 +139,11 @@ async def servo_controller():
 #region Main
 
 async def main():
-    servo_settings = ServoMotorSetting()
-    servo_settings.speed = 25
-    aio.create_task(aio.to_thread(listen_keyboard, on_press=lambda key: keyboard_listener(key, event_type="press"), on_release=lambda key: keyboard_listener(key, event_type="release")))
+
     await aio.gather(
         variable_setter(),
         servo_controller(),
+        keyboard_task(),
     )
 
 if __name__ == "__main__":
