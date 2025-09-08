@@ -23,14 +23,15 @@ so if you use anything else, dont think im crazy.
 
 #region Imports
 """Remove comments below before testing on pi-top"""
-from pitop import ServoMotor, ServoMotorSetting, KeyboardButton
+from pitop import ServoMotor, ServoMotorSetting
 from pitop.robotics import DriveController
+from pynput.keyboard import Key, Controller
 
 #cv2 to show live footage, numpy to help show live footage, Asyncio to run everything all together, Time.Sleep to stop program for any breaks, sys for clean exits
 import cv2, numpy as np, asyncio as aio, time, sys
 
 # Create the drive object
-drive = DriveController()
+drive = DriveController(left_motor_port="M2", right_motor_port="M3")
 
 print("running :)")
 
@@ -61,33 +62,18 @@ async def keyboard_task():
     Asyncio-compatible task that listens for pi-top KeyboardButton events
     and updates the shared `keys_held` set accordingly.
     """
-    # Define event handlers
-    def on_press(btn):
-        keys_held.add(btn.key)   # use button name for consistency
-        print(f"Pressed: {btn.key} | Keys held: {keys_held}")
+    watched_keys = ["w", "a", "s", "d", "j", "l", "c", "escape"]
 
-    def on_release(btn):
-        keys_held.discard(btn.key)
-        print(f"Released: {btn.name} | Keys held: {keys_held}")
-
-    # Assign callbacks to buttons you care about
-    watched_keys = [
-        KeyboardButton("w"),
-        KeyboardButton("a"),
-        KeyboardButton("s"),
-        KeyboardButton("d"),
-        KeyboardButton("j"),
-        KeyboardButton("l"),
-        KeyboardButton("c"),
-        KeyboardButton("escape"),
-    ]
-
-    for key in watched_keys:
-        key.when_pressed = on_press
-        key.when_released = on_release
-
-    # Keep this coroutine alive while program is running
     while state["running"]:
+        for key in watched_keys:
+            button = KeyboardButton(key)
+
+            if button.is_pressed:
+                keys_held.add(key)
+            else:
+                keys_held.discard(key)
+
+        print(f"Keys held: {keys_held}")
         await aio.sleep(0.05)
 
 #endregion
