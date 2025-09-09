@@ -25,7 +25,7 @@ so if you use anything else, dont think im crazy.
 """Remove comments below before testing on pi-top"""
 from pitop import ServoMotor, ServoMotorSetting
 from pitop.robotics import DriveController
-from pynput.keyboard import Key, Controller
+from pynput import keyboard
 
 #cv2 to show live footage, numpy to help show live footage, Asyncio to run everything all together, Time.Sleep to stop program for any breaks, sys for clean exits
 import cv2, numpy as np, asyncio as aio, time, sys
@@ -62,19 +62,23 @@ async def keyboard_task():
     Asyncio-compatible task that listens for pi-top KeyboardButton events
     and updates the shared `keys_held` set accordingly.
     """
-    watched_keys = ["w", "a", "s", "d", "j", "l", "c", "escape"]
+    def on_press(key):
+        try:
+            print('alphanumeric key {} pressed'.format(key.char))
+        except AttributeError:
+            print('special key {} pressed'.format(key))
 
-    while state["running"]:
-        for key in watched_keys:
-            button = KeyboardButton(key)
+    def on_release(key):
+        print('{} released'.format(key))
+        if key == keyboard.Key.esc:
+            # Stop listener
+            state["running"] = False
 
-            if button.is_pressed:
-                keys_held.add(key)
-            else:
-                keys_held.discard(key)
-
-        print(f"Keys held: {keys_held}")
-        await aio.sleep(0.05)
+    # ...or, in a non-blocking fashion:
+    listener = keyboard.Listener(
+        on_press=on_press,
+        on_release=on_release)
+    listener.start()
 
 #endregion
 
