@@ -21,7 +21,7 @@ async def handle_client(reader, writer):
                 header = struct.pack(">BI", 0x01, len(data))  # type=1, size
                 writer.write(header + data)
                 await writer.drain()
-            await aio.sleep(0.05)  # ~20 FPS
+            await aio.sleep(0.01667)  # ~60 FPS
 
     aio.create_task(send_frame())
 
