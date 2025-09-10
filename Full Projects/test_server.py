@@ -4,7 +4,7 @@ from pitop import Camera, ServoMotor
 from pitop.robotics import DriveController
 import sys
 
-cam = Camera()
+cam = Camera(resolution=(1920, 1080))
 servo = ServoMotor("S0")
 drive = DriveController(left_motor_port="M2", right_motor_port="M3")
 
