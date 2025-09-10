@@ -8,7 +8,7 @@ cam = Camera(resolution=(1920, 1080))
 servo = ServoMotor("S0")
 drive = DriveController(left_motor_port="M2", right_motor_port="M3")
 
-state = {"keys": set(), "running": True, "send_video": True}
+state = {"keys": set(), "running": True, "send_video": True, "servo_angle": 0}
 
 async def handle_client(reader, writer):
     async def send_frame():
@@ -65,10 +65,10 @@ async def variable_setter():
 
         # Servo control
         if 'left' in state["keys"]:
-            state["servo_angle"] = max(-90, state["servo_angle"] - 5)
+            state["servo_angle"] = max(90, state["servo_angle"] + 10)
             servo.target_angle = state['servo_angle']
         elif 'right' in state["keys"]:
-            state["servo_angle"] = min(90, state["servo_angle"] + 5)
+            state["servo_angle"] = max(-90, state["servo_angle"] - 10)
             servo.target_angle = state['servo_angle']
 
         # Exit program
