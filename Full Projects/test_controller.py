@@ -1,7 +1,7 @@
 import socket, struct, cv2, numpy as np
 from pynput import keyboard
 
-HOST = "pi-top-ip"
+HOST = "10.0.17.80"
 PORT = 9999
 
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -32,7 +32,7 @@ def on_release(key):
         if key == keyboard.Key.esc:
             send_cmd("EXIT")
             sock.close()
-            return False
+            listener.stop()
     except:
         pass
 
@@ -56,8 +56,9 @@ while True:
 
     if msg_type == 0x01:  # JPEG frame
         frame = cv2.imdecode(np.frombuffer(data, dtype=np.uint8), cv2.IMREAD_COLOR)
-        cv2.imshow("Pi-top Camera", frame)
-        if cv2.waitKey(1) & 0xFF == 27:
-            break
+        if frame is not None:
+            cv2.imshow("Pi-top Camera", frame)
+            if cv2.waitKey(1) & 0xFF == 27:
+                break
     elif msg_type == 0x02:  # Text
         print("Response:", data.decode())
