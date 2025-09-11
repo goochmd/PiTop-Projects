@@ -1,15 +1,17 @@
 import asyncio as aio
 import cv2, numpy as np, struct
-from pitop import Camera, ServoMotor
+from pitop import Camera, ServoMotor, LED
 from pitop.robotics import DriveController
 import sys
 
 
 cam = Camera(resolution=(1920, 1080))
-servo = ServoMotor("S0")
+brakelight = LED("D0")
+panservo = ServoMotor("S0")
+tiltservo = ServoMotor("S1")
 drive = DriveController(left_motor_port="M2", right_motor_port="M3")
 
-state = {"keys": set(), "running": True, "servo_angle": 0}
+state = {"keys": set(), "running": True, "pan_angle": 0, "tilt_angle": 0}
 
 
 # Keybind server: receives keybinds from controller
@@ -55,23 +57,34 @@ async def handle_video(reader, writer):
 async def variable_setter():
     while state["running"]:
         if "w" in state["keys"]:
-            drive.forward(1)  # 80% of max speed
+            drive.forward(1)  # 100% of max speed
+            brakelight.off()
         elif "s" in state["keys"]:
             drive.backward(1)
+            brakelight.off()
         elif "a" in state["keys"]:
             drive.rotate(0.2)  # rotate left in place
+            brakelight.on()
         elif "d" in state["keys"]:
             drive.rotate(-0.2)  # rotate right in place
+            brakelight.on()
         else:
             drive.stop()
+            brakelight.on()
+
 
         # Servo control
         if 'left' in state["keys"]:
-            state["servo_angle"] = max(90, state["servo_angle"] + 10)
-            servo.target_angle = state['servo_angle']
+            state["pan_angle"] = min(90, state["pan_angle"] + 10)
         elif 'right' in state["keys"]:
-            state["servo_angle"] = max(-90, state["servo_angle"] - 10)
-            servo.target_angle = state['servo_angle']
+            state["pan_angle"] = max(-90, state["pan_angle"] - 10)
+        panservo.target_angle = state['pan_angle']
+
+        if 'up' in state["keys"]:
+            state["tilt_angle"] = min(90, state["tilt_angle"] + 10)
+        elif 'down' in state["keys"]:
+            state["tilt_angle"] = max(-90, state["tilt_angle"] - 10)
+        tiltservo.target_angle = state['tilt_angle']
 
         # Exit program
         if 'escape' in state["keys"]:

@@ -26,6 +26,10 @@ def on_press(key):
             send_cmd("PRESS_LEFT")
         elif key == keyboard.Key.right:
             send_cmd("PRESS_RIGHT")
+        elif key == keyboard.Key.up:
+            send_cmd("PRESS_UP")
+        elif key == keyboard.Key.down:
+            send_cmd("PRESS_DOWN")
     except:
         pass
 
