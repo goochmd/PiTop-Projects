@@ -1,14 +1,22 @@
+
 import socket, struct, cv2, numpy as np
 from pynput import keyboard
+import threading
 
-HOST = "10.0.17.80"
-PORT = 9999
+HOST = "10.0.17.80"  # Update as needed
+KEYBIND_PORT = 9999
+VIDEO_PORT = 10000
 
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-sock.connect((HOST, PORT))
+# Keybind socket (send commands)
+keybind_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+keybind_sock.connect((HOST, KEYBIND_PORT))
+
+# Video socket (receive frames)
+video_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+video_sock.connect((HOST, VIDEO_PORT))
 
 def send_cmd(msg: str):
-    sock.sendall((msg + "\n").encode())
+    keybind_sock.sendall((msg + "\n").encode())
 
 def on_press(key):
     try:
@@ -31,7 +39,8 @@ def on_release(key):
             send_cmd("RELEASE_RIGHT")
         if key == keyboard.Key.esc:
             send_cmd("EXIT")
-            sock.close()
+            keybind_sock.close()
+            video_sock.close()
             listener.stop()
     except:
         pass
@@ -39,26 +48,34 @@ def on_release(key):
 listener = keyboard.Listener(on_press=on_press, on_release=on_release)
 listener.start()
 
-while True:
-    # Read header
-    header = sock.recv(5)
-    if not header:
-        break
-    msg_type, size = struct.unpack(">BI", header)
-
-    # Read payload
-    data = b""
-    while len(data) < size:
-        packet = sock.recv(size - len(data))
-        if not packet:
+# Thread for receiving video frames
+def video_thread():
+    while True:
+        header = video_sock.recv(5)
+        if not header:
             break
-        data += packet
-
-    if msg_type == 0x01:  # JPEG frame
-        frame = cv2.imdecode(np.frombuffer(data, dtype=np.uint8), cv2.IMREAD_COLOR)
-        if frame is not None:
-            cv2.imshow("Pi-top Camera", frame)
-            if cv2.waitKey(1) & 0xFF == 27:
+        msg_type, size = struct.unpack(">BI", header)
+        data = b""
+        while len(data) < size:
+            packet = video_sock.recv(size - len(data))
+            if not packet:
                 break
-    elif msg_type == 0x02:  # Text
-        print("Response:", data.decode())
+            data += packet
+        if msg_type == 0x01:  # JPEG frame
+            frame = cv2.imdecode(np.frombuffer(data, dtype=np.uint8), cv2.IMREAD_COLOR)
+            if frame is not None:
+                cv2.imshow("Pi-top Camera", frame)
+                if cv2.waitKey(1) & 0xFF == 27:
+                    break
+    video_sock.close()
+    cv2.destroyAllWindows()
+
+video_t = threading.Thread(target=video_thread, daemon=True)
+video_t.start()
+
+# Keep main thread alive
+try:
+    while video_t.is_alive():
+        video_t.join(1)
+except KeyboardInterrupt:
+    pass

@@ -4,27 +4,16 @@ from pitop import Camera, ServoMotor
 from pitop.robotics import DriveController
 import sys
 
+
 cam = Camera(resolution=(1920, 1080))
 servo = ServoMotor("S0")
 drive = DriveController(left_motor_port="M2", right_motor_port="M3")
 
-state = {"keys": set(), "running": True, "send_video": True, "servo_angle": 0}
+state = {"keys": set(), "running": True, "servo_angle": 0}
 
-async def handle_client(reader, writer):
-    async def send_frame():
-        while state["running"]:
-            if state["send_video"]:
-                frame = cam.get_frame()  # PIL image
-                frame = cv2.cvtColor(np.array(frame), cv2.COLOR_RGB2BGR)
-                _, jpeg = cv2.imencode(".jpg", frame)
-                data = jpeg.tobytes()
-                header = struct.pack(">BI", 0x01, len(data))  # type=1, size
-                writer.write(header + data)
-                await writer.drain()
-            await aio.sleep(0.01667)  # ~60 FPS
 
-    aio.create_task(send_frame())
-
+# Keybind server: receives keybinds from controller
+async def handle_keybinds(reader, writer):
     while state["running"]:
         line = await reader.readline()
         if not line:
@@ -47,6 +36,19 @@ async def handle_client(reader, writer):
         writer.write(header + response)
         await writer.drain()
 
+    writer.close()
+
+# Video server: sends video frames to controller
+async def handle_video(reader, writer):
+    while state["running"]:
+        frame = cam.get_frame()  # PIL image
+        frame = cv2.cvtColor(np.array(frame), cv2.COLOR_RGB2BGR)
+        _, jpeg = cv2.imencode(".jpg", frame)
+        data = jpeg.tobytes()
+        header = struct.pack(">BI", 0x01, len(data))  # type=1, size
+        writer.write(header + data)
+        await writer.drain()
+        await aio.sleep(0.01667)  # ~60 FPS
     writer.close()
 
 #region Variable Setting
@@ -85,13 +87,15 @@ async def variable_setter():
 #region Main
 
 async def main():
-    server = await aio.start_server(handle_client, "0.0.0.0", 9999)
-    print("Server running on 9999")
-    async with server:
+    keybind_server = await aio.start_server(handle_keybinds, "0.0.0.0", 9999)
+    video_server = await aio.start_server(handle_video, "0.0.0.0", 10000)
+    print("Keybind server running on 9999")
+    print("Video server running on 10000")
+    async with keybind_server, video_server:
         await aio.gather(
             variable_setter(),
-            server.serve_forever(),
+            keybind_server.serve_forever(),
+            video_server.serve_forever(),
         )
-    
 
 aio.run(main())
