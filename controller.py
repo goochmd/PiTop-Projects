@@ -63,6 +63,10 @@ def on_release(key):
             send_cmd("RELEASE_LEFT")
         elif key == keyboard.Key.right:
             send_cmd("RELEASE_RIGHT")
+        elif key == keyboard.Key.up:
+            send_cmd("RELEASE_UP")
+        elif key == keyboard.Key.down:
+            send_cmd("RELEASE_DOWN")
         if key == keyboard.Key.esc:
             send_cmd("EXIT")
             keybind_sock.close()
@@ -90,13 +94,6 @@ def video_thread():
         if msg_type == 0x01:  # JPEG frame
             frame = cv2.imdecode(np.frombuffer(data, dtype=np.uint8), cv2.IMREAD_COLOR)
             if frame is not None:
-                w,h,c = frame.shape
-                cv2.namedWindow("Pi-top Camera")
-                cv2.resizeWindow("Pi-top Camera", 1920, 1080)
-                new_w = int(w*1.5)
-                new_h = int(h*1.5)
-                frame = cv2.resize(frame, (new_w, new_h))
-                frame = cv2.copyMakeBorder(frame, 0, max(0, 1080-new_h), 0, max(0, 1920-new_w), 0)
                 cv2.imshow("Pi-top Camera", frame)
                 if cv2.waitKey(1) & 0xFF == 27:
                     break
