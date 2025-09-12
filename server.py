@@ -97,15 +97,15 @@ async def variable_setter():
 
         # Servo control
         if 'left' in state["keys"]:
-            state["pan_angle"] = min(90, state["pan_angle"] + 10)
+            state["pan_angle"] = min(90, state["pan_angle"] + 5)
         elif 'right' in state["keys"]:
-            state["pan_angle"] = max(-90, state["pan_angle"] - 10)
+            state["pan_angle"] = max(-90, state["pan_angle"] - 5)
         panservo.target_angle = state['pan_angle']
 
-        if 'up' in state["keys"]:
-            state["tilt_angle"] = min(90, state["tilt_angle"] + 10)
-        elif 'down' in state["keys"]:
-            state["tilt_angle"] = max(-90, state["tilt_angle"] - 10)
+        if 'down' in state["keys"]:
+            state["tilt_angle"] = min(80, state["tilt_angle"] + 5)
+        elif 'up' in state["keys"]:
+            state["tilt_angle"] = max(-80, state["tilt_angle"] - 5)
         tiltservo.target_angle = state['tilt_angle']
 
         # Exit program
