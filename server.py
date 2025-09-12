@@ -1,11 +1,27 @@
-import asyncio as aio
-import cv2, numpy as np, struct
-from pitop import Camera, ServoMotor, LED
+"""Pi-Top Remote Control Server
+This script sets up two servers:
+1. Keybind Server: Listens for keypress events from a client and updates the robot's state.
+2. Video Server: Streams video frames from the Pi-top camera to the client.
+These servers are put together to allow remote control of a Pi-top robot with real-time video feedback.
+Purposes for Libraries Used:
+- asyncio: For asynchronous networking and handling multiple connections.
+- cv2 (OpenCV): For image processing and encoding frames to JPEG.
+- numpy: For efficient array manipulations, especially for image data.
+- struct: For packing and unpacking binary data for network transmission.
+- sys: Seamlessly exits the program when escape is pressed.
+- pitop: To interface with Pi-top hardware components like Camera, ServoMotor, LED, and DriveController.
+- pitop.robotics: Specifically for controlling the robot's drive system.
+
+!!NOTE!!: This code is to ONLY be ran on the pi-top itself, and does not have any functionality on a normal computer.
+This code also cannot be ran standalone, as it needs a client running the controller.py in the same directory to have proper functionality.
+"""
+import asyncio as aio, cv2, numpy as np, struct, sys
+from pitop import Camera, ServoMotor, LED, UltrasonicSensor
 from pitop.robotics import DriveController
-import sys
 
 
-cam = Camera(resolution=(1920, 1080))
+cam = Camera(resolution=(1280, 720))
+uss = UltrasonicSensor("D3", threshold_distance=1, max_distance=300)
 brakelight = LED("D0")
 panservo = ServoMotor("S0")
 tiltservo = ServoMotor("S1")
@@ -45,12 +61,13 @@ async def handle_video(reader, writer):
     while state["running"]:
         frame = cam.get_frame()  # PIL image
         frame = cv2.cvtColor(np.array(frame), cv2.COLOR_RGB2BGR)
+        cv2.putText(frame, f"Ultrasonic Sensor Distance: {uss.distance} m", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
         _, jpeg = cv2.imencode(".jpg", frame)
         data = jpeg.tobytes()
         header = struct.pack(">BI", 0x01, len(data))  # type=1, size
         writer.write(header + data)
         await writer.drain()
-        await aio.sleep(0.01667)  # ~60 FPS
+        await aio.sleep(0.033)  # ~30 FPS
     writer.close()
 
 #region Variable Setting
@@ -58,19 +75,24 @@ async def variable_setter():
     while state["running"]:
         if "w" in state["keys"]:
             drive.forward(1)  # 100% of max speed
-            brakelight.off()
+            if brakelight.is_lit:
+                brakelight.off()
         elif "s" in state["keys"]:
             drive.backward(1)
-            brakelight.off()
+            if brakelight.is_lit:
+                brakelight.off()
         elif "a" in state["keys"]:
             drive.rotate(0.2)  # rotate left in place
-            brakelight.on()
+            if brakelight.is_lit:
+                brakelight.off()
         elif "d" in state["keys"]:
             drive.rotate(-0.2)  # rotate right in place
-            brakelight.on()
+            if not brakelight.is_lit:
+                brakelight.on()
         else:
             drive.stop()
-            brakelight.on()
+            if not brakelight.is_lit:
+                brakelight.on()
 
 
         # Servo control
