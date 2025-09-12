@@ -88,7 +88,7 @@ async def variable_setter():
         elif "d" in state["keys"]:
             drive.rotate(-0.2)  # rotate right in place
             if not brakelight.is_lit:
-                brakelight.on()
+                brakelight.off()
         else:
             drive.stop()
             if not brakelight.is_lit:
