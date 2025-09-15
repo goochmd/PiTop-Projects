@@ -9,7 +9,7 @@ panservo = ServoMotor("S0")
 tiltservo = ServoMotor("S1")
 drive = DriveController(left_motor_port="M2", right_motor_port="M3")
 panservo.target_angle = 0
-tiltservo.target_angle = -15
+tiltservo.target_angle = 15
 
 state = {"keys": set(), "running": True, "pan_angle": 0, "tilt_angle": 0}
 
