@@ -27,3 +27,4 @@ async def main():
         await aio.gather(
             video_server.serve_forever(),
         )
+aio.run(main())
