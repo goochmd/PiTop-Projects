@@ -4,8 +4,15 @@ from pitop.robotics import DriveController
 
 cam = Camera(resolution=(1280, 720))
 uss = UltrasonicSensor("D3", threshold_distance=1, max_distance=300)
+brakelight = LED("D0")
+panservo = ServoMotor("S0")
+tiltservo = ServoMotor("S1")
+drive = DriveController(left_motor_port="M2", right_motor_port="M3")
+panservo.target_angle = 0
+tiltservo.target_angle = 0
 
 state = {"keys": set(), "running": True, "pan_angle": 0, "tilt_angle": 0}
+
 
 async def handle_video(reader, writer):
     while state["running"]:
