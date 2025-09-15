@@ -47,6 +47,8 @@ async def handle_keybinds(reader, writer):
             state["keys"].discard(key)
         elif msg == "EXIT":
             state["running"] = False
+            loop = aio.get_event_loop()
+            loop.call_later(10, sys.exit, 0) 
 
         # Send back confirmation
         response = f"OK {msg}".encode()
