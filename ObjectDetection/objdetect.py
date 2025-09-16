@@ -6,7 +6,6 @@ from pitop.processing.algorithms import BallDetector
 cam = Camera(resolution=(1280, 720))
 balldetect = BallDetector()
 frame = cam.get_frame()
-detected_balls = balldetect(frame, color=["red", "green", "blue"])
 uss = UltrasonicSensor("D3", threshold_distance=1, max_distance=300)
 brakelight = LED("D0")
 panservo = ServoMotor("S0")
@@ -18,6 +17,7 @@ tiltservo.target_angle = 15
 state = {"keys": set(), "running": True, "pan_angle": 0, "tilt_angle": 0}
 
 async def handle_detection():
+    detected_balls = balldetect(frame, color=["red", "green", "blue"])
     while state["running"]:
         red = detected_balls.red
         green = detected_balls.green
