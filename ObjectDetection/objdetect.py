@@ -1,7 +1,7 @@
 import asyncio as aio, numpy as np, cv2, struct
 from pitop import Camera, ServoMotor, EncoderMotor, LED, UltrasonicSensor
 from pitop.robotics import DriveController
-from pitop.processing.algorithm import BallDetector
+from pitop.processing.algorithms import BallDetector
 
 cam = Camera(resolution=(1280, 720))
 balldetect = BallDetector()
