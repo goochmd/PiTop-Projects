@@ -30,12 +30,13 @@ async def handle_detection():
             info = f"Green ball located! \nDistance: {distance} cm \n Center: {green.center} \nRadius: {green.radius}"
         elif blue.found:
             info = f"Blue ball located! \nDistance: {distance} cm \n Center: {blue.center} \nRadius: {blue.radius}"
+        print(info)
 
 
 async def handle_video(reader, writer, frame = detected_balls.robot_view):
     while state["running"]:
         frame = cv2.cvtColor(np.array(frame), cv2.COLOR_RGB2BGR)
-        cv2.putText(frame, info, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+        cv2.putText(frame, info, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)
         _, jpeg = cv2.imencode(".jpg", frame)
         data = jpeg.tobytes()
         header = struct.pack(">BI", 0x01, len(data))  # type=1, size
