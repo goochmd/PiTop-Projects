@@ -30,7 +30,10 @@ async def handle_detection():
             info = f"Green ball located! \nDistance: {distance} cm \n Center: {green.center} \nRadius: {green.radius}"
         elif blue.found:
             info = f"Blue ball located! \nDistance: {distance} cm \n Center: {blue.center} \nRadius: {blue.radius}"
-        print(info)
+        try:
+            print(info)
+        except Exception as e:
+            print(f"Error occurred: {e}")
 
 
 async def handle_video(reader, writer, frame = detected_balls.robot_view):
