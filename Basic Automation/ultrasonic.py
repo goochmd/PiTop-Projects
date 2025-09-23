@@ -2,7 +2,7 @@ from pitop import UltrasonicSensor, Pitop, ServoMotor
 import asyncio as aio
 from pitop.robotics import DriveController
 
-ultrasonic = UltrasonicSensor("D3", threshold_distance=5)
+ultrasonic = UltrasonicSensor("D3", threshold_distance=1)
 drive = DriveController("M2", "M3")
 panservo = ServoMotor("S0")
 panservo.target_angle = 0
