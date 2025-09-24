@@ -12,7 +12,7 @@ global msgchin, msgchout
 msgchin = False
 msgchout = False
 
-async def main():
+def main():
     while True:
         if ultrasonic.in_range():
             msgchout = False
@@ -33,3 +33,4 @@ async def main():
                 msgchout = True
             drive.forward(50)
 
+main()
