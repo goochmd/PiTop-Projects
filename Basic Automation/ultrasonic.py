@@ -5,20 +5,21 @@ from pitop.robotics import DriveController
 ultrasonic = UltrasonicSensor("D3", threshold_distance=1)
 drive = DriveController("M2", "M3")
 panservo = ServoMotor("S0")
-buzzer = Buzzer("D2")
+buzzer = Buzzer("D1")
+led = LED("D0")
 panservo.target_angle = 0
 miniscreen = Pitop().miniscreen
-global msgchin, msgchout
-msgchin = False
-msgchout = False
 
 def main():
+    msgchin = False
+    msgchout = False
     while True:
-        if ultrasonic.in_range():
+        if ultrasonic.distance < 0.5:
             msgchout = False
             info = "Obstacle Detected! Stopping."
             if not msgchin:
-                buzzer.blink(0.1, 0.1, 5)
+                buzzer.blink(1, 1, 2)
+                led.on()
                 print(info)
                 miniscreen.display_multiline_text(info, font_size=14)
                 msgchin = True
@@ -28,6 +29,7 @@ def main():
             msgchin = False
             info = "Path Clear. Moving Forward."
             if not msgchout:
+                led.off()
                 print(info)
                 miniscreen.display_multiline_text(info, font_size=14)
                 msgchout = True
