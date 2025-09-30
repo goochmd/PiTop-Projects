@@ -7,6 +7,8 @@ from pitop.processing.algorithms import BallDetector
 import numpy as np
 import struct
 
+cam = Camera(resolution=(640, 480))
+ball_detector = BallDetector()
 
 async def process_frame(reader, writer):
     frame = cam.get_frame()  # PIL image
@@ -47,10 +49,6 @@ async def process_frame(reader, writer):
     writer.write(header + data)
     await writer.drain()
     await aio.sleep(0.033)  # ~30 FPS
-
-
-ball_detector = BallDetector()
-camera = Camera(resolution=(640, 480))
 video = aio.start_server(process_frame, "0.0.0.0", 10000)
 
 pause()
