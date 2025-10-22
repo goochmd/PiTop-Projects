@@ -1,4 +1,8 @@
-#NO PITOP YET
+'''It has been decided to toss this method
+ due to performance issues and possibility
+ of multi-colored barrels at competition.'''
+
+
 import cv2
 import numpy as np
 import time
