@@ -10,8 +10,6 @@ color = "purple"
 
 # Add frame skip constant
 PROCESS_EVERY_N_FRAMES = 2  # Adjust this value as needed
-global frame_count
-frame_count = 0
 
 # Define the color ranges for purple
 # Purple can be tricky as it spans across the end/beginning of the HSV hue spectrum
@@ -38,7 +36,8 @@ upper2 = np.array(ranges[color][3], dtype=np.uint8)
 # Set detection threshold (adjust as needed)
 detection_threshold = 1000
 
-async def kill_me_now(reader, writer):
+async def detect_color(reader, writer):
+    frame_count = 0
     while True:
         frame = cam.get_frame()
         if frame is None:
@@ -78,7 +77,7 @@ async def kill_me_now(reader, writer):
             break
     cv2.destroyAllWindows()
 async def main():
-    video_server = await aio.start_server(kill_me_now, "0.0.0.0", 10000)
+    video_server = await aio.start_server(detect_color, "0.0.0.0", 10000)
     print("Keybind server running on 9999")
     print("Video server running on 10000")
     async with video_server:
