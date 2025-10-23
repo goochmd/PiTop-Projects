@@ -1,14 +1,16 @@
 import cv2
 import numpy as np
 import time
-from pitop import Camera
-
+try:
+    from pitop import Camera
+except:
+    pass
 # YOU NEED TO SET THIS TO PROPER COLOR
 color = "purple"
 # YOU NEED TO SET THIS TO PROPER COLOR
 
 # Add frame skip constant
-PROCESS_EVERY_N_FRAMES = 3  # Adjust this value as needed
+PROCESS_EVERY_N_FRAMES = 2  # Adjust this value as needed
 frame_count = 0
 
 # Define the color ranges for purple
@@ -20,7 +22,8 @@ ranges = {
     "yellow": [(20, 100, 100), (30, 255, 255), (25, 100, 100), (35, 255, 255)],
     "green": [(40, 50, 50), (80, 255, 255), (60, 100, 100), (80, 255, 255)],
     "blue": [(100, 150, 0), (140, 255, 255), (90, 100, 100), (130, 255, 255)],
-    "purple": [(130, 50, 50), (160, 255, 255), (170, 50, 50), (180, 255, 255)]
+    # Improved purple/magenta ranges — covers violet → magenta spectrum and overlaps to be robust under lighting
+    "purple": [(125, 50, 50), (155, 255, 255), (150, 50, 50), (170, 255, 255)]
 }
 
 # Initialize camera
@@ -37,7 +40,10 @@ upper1, upper2 = np.array(ranges[color][1]), np.array(ranges[color][3])
 detection_threshold = 1000
 
 while True:
-    ret, frame = cam.read() if not isinstance(cam, Camera) else cam.get_frame()
+    try:
+        ret, frame = cam.get_frame()
+    except:
+        ret, frame = cam.read()
     if not ret:
         print("Error: Could not read frame from camera.")
         break
