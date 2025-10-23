@@ -65,14 +65,14 @@ while True:
             time.sleep(0.5)
 
         # Apply the mask and show result
-        result = cv2.bitwise_and(frame, frame, mask=full_mask)
+        # OpenCV copyTo (fast, implemented in C)
+        result = cv2.copyTo(frame, full_mask)
         cv2.imshow('Purple Isolation', result)
 
     frame_count += 1
     
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
-    time.sleep(0.03)
 
 cam.release()
 cv2.destroyAllWindows()
