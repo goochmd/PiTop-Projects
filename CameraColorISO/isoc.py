@@ -1,73 +1,72 @@
-'''It has been decided to toss this method
- due to performance issues and possibility
- of multi-colored barrels at competition.'''
-
-
 import cv2
 import numpy as np
 import time
+from pitop import Camera
 
-# --- 1. Define the HSV Range for Purple ---
-# Purple is unique because it spans the "wrap-around" point (0/180) on the Hue circle.
-# You typically need two ranges to capture it fully.
+# YOU NEED TO SET THIS TO PROPER COLOR
+color = "purple"
+# YOU NEED TO SET THIS TO PROPER COLOR
 
-# Range 1: Upper end of the Hue circle (closer to blue)
-lower_purple_1 = np.array([125, 50, 50])
-upper_purple_1 = np.array([179, 255, 255])
+# Add frame skip constant
+PROCESS_EVERY_N_FRAMES = 3  # Adjust this value as needed
+frame_count = 0
 
-# Range 2: Lower end of the Hue circle (closer to red)
-# This second range is often needed for deep purples/magentas
-lower_purple_2 = np.array([0, 50, 50])
-upper_purple_2 = np.array([5, 255, 255])
+# Define the color ranges for purple
+# Purple can be tricky as it spans across the end/beginning of the HSV hue spectrum
+ranges = {
+    # Two ranges for each color to account for error or lighting variations
+    "red": [(0, 100, 100), (10, 255, 255), (160, 100, 100), (180, 255, 255)],
+    "orange": [(10, 100, 100), (20, 255, 255), (15, 100, 100), (25, 255, 255)],
+    "yellow": [(20, 100, 100), (30, 255, 255), (25, 100, 100), (35, 255, 255)],
+    "green": [(40, 50, 50), (80, 255, 255), (60, 100, 100), (80, 255, 255)],
+    "blue": [(100, 150, 0), (140, 255, 255), (90, 100, 100), (130, 255, 255)],
+    "purple": [(130, 50, 50), (160, 255, 255), (170, 50, 50), (180, 255, 255)]
+}
 
-# --- 2. Camera Setup ---
-cam = cv2.VideoCapture(0)
-cam.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
-cam.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
+# Initialize camera
+try:
+    cam = Camera()
+except:
+    cam = cv2.VideoCapture(0)
+
+# Get the ranges for the selected color
+lower1, lower2 = np.array(ranges[color][0]), np.array(ranges[color][2])
+upper1, upper2 = np.array(ranges[color][1]), np.array(ranges[color][3])
+
+# Set detection threshold (adjust as needed)
+detection_threshold = 1000
 
 while True:
-    ret, frame = cam.read()
+    ret, frame = cam.read() if not isinstance(cam, Camera) else cam.get_frame()
     if not ret:
         print("Error: Could not read frame from camera.")
         break
 
-    # 3. Convert to HSV
-    frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    # Only process every nth frame
+    if frame_count % PROCESS_EVERY_N_FRAMES == 0:
+        # Convert to HSV
+        frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-    # --- 4. Create Masks ---
-    # cv2.inRange checks which pixels fall within the specified HSV ranges
-    mask1 = cv2.inRange(frame_hsv, lower_purple_1, upper_purple_1)
-    mask2 = cv2.inRange(frame_hsv, lower_purple_2, upper_purple_2)
-    full_mask = cv2.bitwise_or(mask1, mask2)
+        # Create Masks
+        mask1 = cv2.inRange(frame_hsv, lower1, upper1)
+        mask2 = cv2.inRange(frame_hsv, lower2, upper2)
+        full_mask = cv2.bitwise_or(mask1, mask2)
 
-    purple_pixel_count = cv2.countNonZero(full_mask)
+        pixel_count = cv2.countNonZero(full_mask)
 
-    # Define a threshold (e.g., 5000 pixels) for what constitutes "seeing" purple.
-    # This value may need adjustment based on your resolution (640x480 or 1280x720).
-    detection_threshold = 50000
+        if pixel_count > detection_threshold:
+            print("🟣 Purple Detected! (Pixel Count:", pixel_count, ")")
+            time.sleep(0.5)
 
-    if purple_pixel_count > detection_threshold:
-        print("🟣 Purple Detected! (Pixel Count:", purple_pixel_count, ")")
-        time.sleep(0.5)
+        # Apply the mask and show result
+        result = cv2.bitwise_and(frame, frame, mask=full_mask)
+        cv2.imshow('Purple Isolation', result)
 
-    # Combine the two masks using a bitwise OR operation
-
-    # --- 5. Apply the Mask ---
-    # Use the mask to extract the purple pixels from the original frame.
-    # The result will only contain the pixels where the mask is white (TRUE).
-    # 
-    result = cv2.bitwise_and(frame, frame, mask=full_mask)
-
-    # --- 6. Display Results ---
-    cv2.imshow('Original Frame', frame)
-    cv2.imshow('Purple Isolation', result) # Shows only the isolated color
-    cv2.imshow('Mask (Black/White)', full_mask) # Shows the filter itself
-
+    frame_count += 1
     
-
     if cv2.waitKey(1) & 0xFF == ord('q'):
         break
-    time.sleep(0.03)  # Small delay to reduce CPU usage
-# Clean up
+    time.sleep(0.03)
+
 cam.release()
 cv2.destroyAllWindows()
