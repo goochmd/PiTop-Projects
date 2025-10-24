@@ -101,9 +101,9 @@ def video_thread():
                     continue
 
                 if msg_type == 0x01:  # JPEG frame
-                    frame = cv2.imdecode(np.frombuffer(data, dtype=np.uint8), cv2.IMREAD_COLOR)
-                    if frame is not None:
-                        cv2.imshow("Pi-top Camera", frame)
+                    bgr = cv2.imdecode(np.frombuffer(data, dtype=np.uint8), cv2.IMREAD_COLOR)
+                    if bgr is not None:
+                        cv2.imshow("Pi-top Camera", bgr)
                         if cv2.waitKey(1) & 0xFF == 27:
                             break
             except Exception as e:
