@@ -10,7 +10,7 @@ led = LED("D0")
 panservo.target_angle = 0
 miniscreen = Pitop().miniscreen
 
-def main():
+async def main():
     msgchin = False
     msgchout = False
     while True:
@@ -35,4 +35,4 @@ def main():
                 msgchout = True
             drive.forward(50)
 
-main()
+asyncio.run(main())
