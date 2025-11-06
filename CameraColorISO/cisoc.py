@@ -38,12 +38,6 @@ COLOR_RANGES = {
         np.array((159, 255, 255), dtype=np.uint8)
     ],
 }
-color = input("Enter color to detect (red, orange, yellow, green, blue, violet): ").strip().lower()
-lower1, upper1 = COLOR_RANGES[color][0], COLOR_RANGES[color][1]
-print(f"Detecting color range: lower1={lower1}, upper1={upper1}")
-if color == "red":
-    lower2, upper2 = COLOR_RANGES[color][2], COLOR_RANGES[color][3]
-    print(f"Detecting extra red range: lower2={lower2}, upper2={upper2}")
 
 # Map client IP -> control writer (to send JSON detections)
 control_writers = {}
@@ -152,6 +146,12 @@ async def main():
     addr2 = control_server.sockets[0].getsockname()
     print(f"Frame server listening on {addr1}")
     print(f"Control server listening on {addr2}")
+    color = input("Enter color to detect (red, orange, yellow, green, blue, violet): ").strip().lower()
+    lower1, upper1 = COLOR_RANGES[color][0], COLOR_RANGES[color][1]
+    print(f"Detecting color range: lower1={lower1}, upper1={upper1}")
+    if color == "red":
+        lower2, upper2 = COLOR_RANGES[color][2], COLOR_RANGES[color][3]
+        print(f"Detecting extra red range: lower2={lower2}, upper2={upper2}")
 
     async with frame_server, control_server:
         await asyncio.gather(frame_server.serve_forever(), control_server.serve_forever())
