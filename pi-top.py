@@ -5,11 +5,10 @@ import numpy as np
 from typing import Optional, Tuple
 import time
 from CameraColorISO.cisoc import main as isocmain
-from CameraColorISO.cisos import main as isosmain
-
 try:
     from pitop import Camera, ServoMotor, LED, UltrasonicSensor
     from pitop.robotics import DriveController
+    from CameraColorISO.cisos import main as isosmain
 except Exception:
     # Lightweight fallbacks for testing on non-pi-top environments
     Camera = None
