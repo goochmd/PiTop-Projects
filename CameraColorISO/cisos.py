@@ -1,25 +1,16 @@
-# cisos.py
+# cisos.py (Updated Client)
 import cv2
 import numpy as np
 import asyncio
 import struct
+import json  # Using JSON for data transfer
 from pitop import Camera
 
-PROCESSOR_HOST = "127.0.0.1"
+# !!! IMPORTANT: CHANGE THIS to the IP of your processing computer
+PROCESSOR_HOST = "IP_OF_PROCESSOR_HERE" 
 PROCESSOR_PORT = 11000
 
 cam = Camera()
-color = "purple"
-detection_threshold = 500
-
-# HSV ranges for purple
-ranges = {
-    "purple": [(125, 50, 50), (155, 255, 255), (150, 50, 50), (170, 255, 255)]
-}
-lower1 = np.array(ranges[color][0], np.uint8)
-upper1 = np.array(ranges[color][1], np.uint8)
-lower2 = np.array(ranges[color][2], np.uint8)
-upper2 = np.array(ranges[color][3], np.uint8)
 
 # Helper to send a single frame
 async def send_frame(writer, frame):
@@ -29,13 +20,18 @@ async def send_frame(writer, frame):
     writer.write(header + data)
     await writer.drain()
 
-# Helper to receive a single frame
-async def recv_frame(reader):
-    header = await reader.readexactly(5)
-    msg_type, size = struct.unpack(">BI", header)
-    data = await reader.readexactly(size)
-    frame = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR)
-    return frame
+# Helper to receive barrel location data
+async def recv_data(reader):
+    try:
+        header = await reader.readexactly(5)
+        msg_type, size = struct.unpack(">BI", header)
+        data = await reader.readexactly(size)
+        
+        # Deserialize the JSON data
+        locations = json.loads(data.decode("utf-8"))
+        return locations
+    except asyncio.IncompleteReadError:
+        return None
 
 # Task to continuously send camera frames
 async def send_camera_frames(reader, writer):
@@ -44,28 +40,44 @@ async def send_camera_frames(reader, writer):
         await send_frame(writer, frame)
         await asyncio.sleep(0.033)  # ~30 FPS
 
-# Task to continuously receive processed frames
-async def receive_processed_frames(reader, writer):
+# Task to continuously receive barrel locations
+async def receive_barrel_locations(reader, writer):
     while True:
         try:
-            frame = await recv_frame(reader)
-            if frame is not None:
-                # Optional: show processed frame
-                cv2.imshow("Processed Frame from cisoc", frame)
-                if cv2.waitKey(1) & 0xFF == ord('q'):
-                    break
-        except asyncio.IncompleteReadError:
-            print("Connection closed by cisoc")
+            # This now receives the list of coordinates
+            locations = await recv_data(reader)
+            
+            if locations is None:
+                print("Connection closed by server")
+                break
+            
+            if locations:
+                # This is where you would "use this data for something else"
+                print(f"Received barrel locations: {locations}")
+            else:
+                # Optional: print when no barrels are found
+                # print("No barrels detected.")
+                pass
+
+        except Exception as e:
+            print(f"Error receiving data: {e}")
             break
 
 async def main():
-    reader, writer = await asyncio.open_connection(PROCESSOR_HOST, PROCESSOR_PORT)
-    print("Connected to cisoc.py")
+    print(f"Connecting to {PROCESSOR_HOST}:{PROCESSOR_PORT}...")
+    try:
+        reader, writer = await asyncio.open_connection(PROCESSOR_HOST, PROCESSOR_PORT)
+        print("Connected to cisoc.py server.")
+    except Exception as e:
+        print(f"Failed to connect: {e}")
+        return
 
     await asyncio.gather(
         send_camera_frames(reader, writer),
-        receive_processed_frames(reader, writer)
+        receive_barrel_locations(reader, writer)
     )
 
-asyncio.run(main())
-cv2.destroyAllWindows()
+try:
+    asyncio.run(main())
+except KeyboardInterrupt:
+    print("\nClient shutting down.")
