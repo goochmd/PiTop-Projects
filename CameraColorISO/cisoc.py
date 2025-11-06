@@ -1,137 +1,98 @@
-"""Pi-Top Remote Control Client (Controller)
-This script connects to two servers running on the Pi-top:
-1. Keybind Server: Sends keypress events to control the robot remotely.
-2. Video Server: Receives and displays real-time video frames from the Pi-top camera.
-Purposes for Libraries Used:
-- socket: For TCP networking to communicate with the Pi-top servers.
-- struct: For packing and unpacking binary data for video frame transmission.
-- cv2 (OpenCV): For decoding and displaying video frames.
-- numpy: For efficient array manipulations, especially for image data.
-- pynput: For capturing keyboard events and sending them to the Pi-top.
-- threading: For running the video receiver in a separate thread.
-
-!!NOTE!!: This code is intended to be run on a client computer, not on the Pi-top itself.
-It requires the Pi-top server code to be running and accessible on the specified network.
-"""
+# cisoc.py
 import socket, struct, cv2, numpy as np
-import time
 import threading
+import queue
 
-HOST = "10.0.17.80"  # Update as needed
+VIDEO_HOST = "10.0.17.80"  # Pi-top video server
 VIDEO_PORT = 10000
+PROCESSOR_HOST = "127.0.0.1"  # Local processor
+PROCESSOR_PORT = 11000
 
-# Start with no video socket and connect lazily/reconnect as needed
-video_sock = None
+color = "purple"
+detection_threshold = 500
 
+# HSV ranges for colors
+ranges = {
+    "purple": [(125, 50, 50), (155, 255, 255), (150, 50, 50), (170, 255, 255)]
+}
+lower1 = np.array(ranges[color][0], np.uint8)
+upper1 = np.array(ranges[color][1], np.uint8)
+lower2 = np.array(ranges[color][2], np.uint8)
+upper2 = np.array(ranges[color][3], np.uint8)
 
-def try_connect_video():
-    global video_sock
-    if video_sock:
-        return True
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(3)
-        s.connect((HOST, VIDEO_PORT))
-        s.settimeout(None)
-        video_sock = s
-        print(f"Connected to video server {HOST} at port {VIDEO_PORT}")
-        return True
-    except Exception:
-        video_sock = None
-        return False
+# Thread-safe queue for processed frames
+processed_queue = queue.Queue()
 
-# No keyboard/keybind logic - this client only shows video
-
-# Thread for receiving video frames
-def recv_exact(sock: socket.socket, n: int):
-    """Receive exactly n bytes from socket or return None if connection closed."""
+def recv_exact(sock, n):
     data = b""
-    try:
-        while len(data) < n:
-            chunk = sock.recv(n - len(data))
-            if not chunk:
-                return None
-            data += chunk
-        return data
-    except Exception:
-        return None
+    while len(data) < n:
+        chunk = sock.recv(n - len(data))
+        if not chunk:
+            return None
+        data += chunk
+    return data
 
+def video_receiver():
+    video_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    video_sock.connect((VIDEO_HOST, VIDEO_PORT))
+    print("Connected to Pi-top video server")
 
-def video_thread():
-    """Continuously receive frames, reconnecting if the server closes the connection.
+    while True:
+        header = recv_exact(video_sock, 5)
+        if not header:
+            break
+        msg_type, size = struct.unpack(">BI", header)
+        data = recv_exact(video_sock, size)
+        if data is None:
+            break
 
-    The server (`cisos.py`) can close the writer after sending a frame; this client
-    therefore must tolerate connection drops and reconnect.
-    """
-    global video_sock
-    try:
-        while True:
-            if not try_connect_video():
-                # wait and retry
-                time.sleep(0.5)
-                continue
+        frame = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR)
+        if frame is None:
+            continue
 
-            try:
-                # take a local reference so static checkers know it's not None
-                sock = video_sock
-                if sock is None:
-                    # connection dropped between checks; retry
-                    time.sleep(0.05)
-                    continue
+        # Color detection and contour processing
+        frame_hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        mask1 = cv2.inRange(frame_hsv, lower1, upper1)
+        mask2 = cv2.inRange(frame_hsv, lower2, upper2)
+        full_mask = cv2.bitwise_or(mask1, mask2)
 
-                header = recv_exact(sock, 5)
-                if not header:
-                    # Server closed connection; cleanup and reconnect
-                    try:
-                        sock.close()
-                    except Exception:
-                        pass
-                    video_sock = None
-                    time.sleep(0.1)
-                    continue
-                msg_type, size = struct.unpack(">BI", header)
-                data = recv_exact(sock, size)
-                if data is None:
-                    try:
-                        sock.close()
-                    except Exception:
-                        pass
-                    video_sock = None
-                    time.sleep(0.1)
-                    continue
+        contours, _ = cv2.findContours(full_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        for cnt in contours:
+            area = cv2.contourArea(cnt)
+            if area > detection_threshold:
+                x, y, w, h = cv2.boundingRect(cnt)
+                cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
-                if msg_type == 0x01:  # JPEG frame
-                    bgr = cv2.imdecode(np.frombuffer(data, dtype=np.uint8), cv2.IMREAD_COLOR)
-                    if bgr is not None:
-                        cv2.imshow("Pi-top Camera", bgr)
-                        if cv2.waitKey(1) & 0xFF == 27:
-                            break
-            except Exception as e:
-                # Something went wrong with this connection; drop and reconnect
-                # print a short message and retry
-                print("Video connection error:", str(e))
-                try:
-                    if video_sock:
-                        video_sock.close()
-                except Exception:
-                    pass
-                video_sock = None
-                time.sleep(0.5)
-                continue
-    finally:
+        # Push the processed frame to the queue
+        processed_queue.put(frame)
+
+    video_sock.close()
+
+def processor_sender():
+    processor_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    processor_sock.connect((PROCESSOR_HOST, PROCESSOR_PORT))
+    print("Connected to processor")
+
+    while True:
+        frame = processed_queue.get()  # Blocks until a frame is available
+        _, jpeg = cv2.imencode(".jpg", frame)
+        data = jpeg.tobytes()
+        header = struct.pack(">BI", 0x01, len(data))
         try:
-            if video_sock:
-                video_sock.close()
-        except Exception:
-            pass
-        cv2.destroyAllWindows()
+            processor_sock.sendall(header + data)
+        except ConnectionResetError:
+            print("Processor disconnected")
+            break
 
-video_t = threading.Thread(target=video_thread, daemon=True)
-video_t.start()
+    processor_sock.close()
+
+# Start threads
+threading.Thread(target=video_receiver, daemon=True).start()
+threading.Thread(target=processor_sender, daemon=True).start()
 
 # Keep main thread alive
 try:
-    while video_t.is_alive():
-        video_t.join(1)
+    while True:
+        pass
 except KeyboardInterrupt:
-    pass
+    print("Exiting cisoc.py")
