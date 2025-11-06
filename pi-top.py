@@ -165,8 +165,3 @@ async def run_color_isoc():
 
 async def run_color_isos():
     await isosmain()
-
-
-
-if __name__ == "__main__":
-    aio.run(run_color_isos())
