@@ -14,9 +14,11 @@ cam = Camera()
 
 # Helper to send a single frame
 async def send_frame(writer, frame):
-    _, jpeg = cv2.imencode(".jpg", frame)
+    ok, jpeg = cv2.imencode(".jpg",frame)
+    if not ok:
+        return
     data = jpeg.tobytes()
-    header = struct.pack(">BI", 0x01, len(data))
+    header = struct.pack(">I", len(data))
     writer.write(header + data)
     await writer.drain()
 
@@ -36,7 +38,9 @@ async def recv_data(reader):
 # Task to continuously send camera frames
 async def send_camera_frames(reader, writer):
     while True:
-        frame = cam.get_frame()
+        frame = np.array(cam.get_frame())
+        # pitop.Camera gives RGB → convert for OpenCV
+        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         await send_frame(writer, frame)
         await asyncio.sleep(0.033)  # ~30 FPS
 
