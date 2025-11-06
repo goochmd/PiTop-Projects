@@ -69,6 +69,13 @@ async def handle_control_client(reader, writer):
             pass
 
 async def handle_frame_client(reader, writer):
+    color = input("Enter color to detect (red, orange, yellow, green, blue, violet): ").strip().lower()
+    lower1, upper1 = COLOR_RANGES[color][0], COLOR_RANGES[color][1]
+    print(f"Detecting color range: lower1={lower1}, upper1={upper1}")
+    if color == "red":
+        lower2, upper2 = COLOR_RANGES[color][2], COLOR_RANGES[color][3]
+        print(f"Detecting extra red range: lower2={lower2}, upper2={upper2}")
+
     peer = writer.get_extra_info("peername")
     if not peer:
         writer.close()
@@ -77,6 +84,7 @@ async def handle_frame_client(reader, writer):
     ip = peer[0]
     print(f"[FRAME] Connected from {ip}")
     try:
+    
         while True:
             header = await reader.readexactly(4)
             (frame_size,) = struct.unpack(">I", header)
@@ -141,18 +149,11 @@ async def handle_frame_client(reader, writer):
 async def main():
     frame_server = await asyncio.start_server(handle_frame_client, HOST, FRAME_PORT)
     control_server = await asyncio.start_server(handle_control_client, HOST, CONTROL_PORT)
-
+    
     addr1 = frame_server.sockets[0].getsockname()
     addr2 = control_server.sockets[0].getsockname()
     print(f"Frame server listening on {addr1}")
     print(f"Control server listening on {addr2}")
-    color = input("Enter color to detect (red, orange, yellow, green, blue, violet): ").strip().lower()
-    lower1, upper1 = COLOR_RANGES[color][0], COLOR_RANGES[color][1]
-    print(f"Detecting color range: lower1={lower1}, upper1={upper1}")
-    if color == "red":
-        lower2, upper2 = COLOR_RANGES[color][2], COLOR_RANGES[color][3]
-        print(f"Detecting extra red range: lower2={lower2}, upper2={upper2}")
-
     async with frame_server, control_server:
         await asyncio.gather(frame_server.serve_forever(), control_server.serve_forever())
 
