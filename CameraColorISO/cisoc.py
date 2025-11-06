@@ -12,8 +12,10 @@ DETECTION_THRESHOLD = 500
 # ROYGBV HSV ranges (OpenCV H: 0-180, S:0-255, V:0-255)
 COLOR_RANGES = {
     "red": [
-        np.array((0, 100, 50), dtype=np.uint8), 
-        np.array((10, 255, 255), dtype=np.uint8)
+        np.array((0, 180, 160), dtype=np.uint8),
+        np.array((8, 255, 255), dtype=np.uint8),
+        np.array((172, 180, 160), dtype=np.uint8),
+        np.array((180, 255, 255), dtype=np.uint8)
     ],
     "orange": [
         np.array((11, 100, 50), dtype=np.uint8), 
@@ -36,13 +38,12 @@ COLOR_RANGES = {
         np.array((159, 255, 255), dtype=np.uint8)
     ],
 }
-lower, upper = COLOR_RANGES[input("Enter color to detect (red, orange, yellow, green, blue, violet): ").strip().lower()]
-print(f"Detecting color range: lower={lower}, upper={upper}")
-# default single-range variables used by the rest of the script (keep purple as default)
-
-# helper to retrieve ranges for a color name (returns list of (lower, upper) pairs)
-def get_hsv_ranges(color_name):
-    return COLOR_RANGES.get(color_name.lower(), [(lower, upper)])
+color = input("Enter color to detect (red, orange, yellow, green, blue, violet): ").strip().lower()
+lower1, upper1 = COLOR_RANGES[color][0], COLOR_RANGES[color][1]
+print(f"Detecting color range: lower1={lower1}, upper1={upper1}")
+if color == "red":
+    lower2, upper2 = COLOR_RANGES[color][2], COLOR_RANGES[color][3]
+    print(f"Detecting extra red range: lower2={lower2}, upper2={upper2}")
 
 # Map client IP -> control writer (to send JSON detections)
 control_writers = {}
@@ -93,7 +94,15 @@ async def handle_frame_client(reader, writer):
 
             # Detect purple objects
             hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-            mask = cv2.inRange(hsv, lower, upper)
+            if color == "red":
+                mask1 = cv2.inRange(hsv, lower1, upper1)
+                mask2 = cv2.inRange(hsv, lower2, upper2)
+                mask = cv2.bitwise_or(mask1, mask2)
+            else:
+                mask = cv2.inRange(hsv, lower1, upper1)
+            mask = cv2.medianBlur(mask, 5)
+            mask = cv2.erode(mask, None, iterations=1)
+            mask = cv2.dilate(mask, None, iterations=1)
             kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
             mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations=1)
             mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel, iterations=1)
