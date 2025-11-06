@@ -30,7 +30,7 @@ This repository collects small robotics projects and competition helpers built a
 ### 3) Remote Control (`Tools/RC`)
  - Goal: provide manual control interfaces and a lightweight server for remote commands. `controller.py` is the main control client; `server.py` can accept network commands or serve as a telemetry endpoint.
 
-## tools.py
+### 4) tools.py (`Tools/`)
  - Purpose: centralized helper utilities that multiple projects use. Examples that belong here: Pi-Top SDK initialization, unified logging setup, common PWM/motor abstractions, safe shutdown sequences, and short helper functions for sensor calibration. Keeping these helpers in `tools.py` keeps the example project files concise and focused on the core algorithm for each demo.
 
 ## Competition / challenge files
