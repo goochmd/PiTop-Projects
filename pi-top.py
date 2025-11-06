@@ -4,7 +4,7 @@ import cv2
 import numpy as np
 from typing import Optional, Tuple
 import time
-from CameraColorISO.cisoc
+from CameraColorISO.cisoc import main as isomain
 
 try:
     from pitop import Camera, ServoMotor, LED, UltrasonicSensor
@@ -158,3 +158,9 @@ class PanTiltController:
 
     def tilt(self, angle: float) -> None:
         self.tilt_servo.target_angle = angle
+
+async def run_color_iso_server():
+    await isomain()
+
+if __name__ == "__main__":
+    aio.run(run_color_iso_server())
