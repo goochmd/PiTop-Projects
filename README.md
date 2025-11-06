@@ -7,7 +7,6 @@ This repository collects small robotics projects and competition helpers built a
 	 - `OBJDET/` — object-detection-by-color projects
 		 - `cisoc.py` — color isolation & object detection helpers (single-file detector)
 		 - `cisos.py` — secondary or alternate color-isolation implementation
-		 - `testc.py` — quick test harness for `OBJDET` code
 	 - `USM/` — Ultrasonic Movement project(s)
 		 - `ultrasonic.py` — ultrasonic sensor control, distance measurement and movement coordination
 	 - `RC/` — Remote Control related code
