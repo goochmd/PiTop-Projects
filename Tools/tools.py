@@ -48,7 +48,7 @@ async def run_color_isoc():
 
 # Object Detection - Color Isolation Server
 async def run_color_isos():
-    await isosmain()
+    return await isosmain()
 
 # Ultrasonic Measurement
 async def run_ultrasonic():
