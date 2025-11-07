@@ -48,6 +48,7 @@ async def run_color_isoc():
 
 # Object Detection - Color Isolation Server
 async def run_color_isos():
+    # Returns list, indices: 0 = frame, 1 = object locations
     return await isosmain()
 
 # Ultrasonic Measurement
