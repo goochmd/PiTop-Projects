@@ -12,25 +12,28 @@ CONTROL_PORT = 11001
 cam = Camera(resolution=(640, 480))
 
 async def send_frames(frame_writer):
-    try:
-        frame = np.array(cam.get_frame())
-        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-        ok, jpeg = cv2.imencode(".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
-        if not ok:
-            await asyncio.sleep(0.03)
-        data = jpeg.tobytes()
-        frame_writer.write(struct.pack(">I", len(data)) + data)
-        await frame_writer.drain()
-        await asyncio.sleep(0.03)
-        return frame
-    except (ConnectionResetError, asyncio.IncompleteReadError):
-        print("[FRAME CLIENT] Connection lost")
-    finally:
+    async def send_frames(frame_writer):
         try:
-            frame_writer.close()
-            await frame_writer.wait_closed()
-        except Exception:
-            pass
+            while True:
+                frame = np.array(cam.get_frame())
+                frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                ok, jpeg = cv2.imencode(".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
+                if not ok:
+                    await asyncio.sleep(0.03)
+                    continue
+                data = jpeg.tobytes()
+                try:
+                    frame_writer.write(struct.pack(">I", len(data)) + data)
+                    await frame_writer.drain()
+                except (ConnectionResetError, BrokenPipeError, OSError):
+                    print("[FRAME CLIENT] Connection lost")
+                    return
+                await asyncio.sleep(0.03)
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:
+            print(f"[FRAME CLIENT] Error: {e}")
+            return
 
 async def receive_detections(control_reader):
     try:
