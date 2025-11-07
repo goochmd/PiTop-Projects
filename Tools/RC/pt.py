@@ -134,5 +134,3 @@ async def main():
             keybind_server.serve_forever(),
             video_server.serve_forever(),
         )
-
-aio.run(main())

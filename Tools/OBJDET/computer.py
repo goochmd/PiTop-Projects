@@ -156,6 +156,3 @@ async def main():
     print(f"Control server listening on {addr2}")
     async with frame_server, control_server:
         await asyncio.gather(frame_server.serve_forever(), control_server.serve_forever())
-
-if __name__ == "__main__":
-    asyncio.run(main())

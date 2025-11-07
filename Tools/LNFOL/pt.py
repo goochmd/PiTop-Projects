@@ -60,9 +60,3 @@ async def main():
             receive_detections(reader_c)
         )
         return detections
-
-if __name__ == "__main__":
-    try:
-        asyncio.run(main())
-    except KeyboardInterrupt:
-        print("Stopped by user.")

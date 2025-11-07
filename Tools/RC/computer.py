@@ -147,6 +147,3 @@ def main():
                 video_sock.close()
         except Exception:
             pass
-
-if __name__ == "__main__":
-    main()

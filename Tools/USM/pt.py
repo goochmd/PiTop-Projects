@@ -34,5 +34,3 @@ async def main():
                 miniscreen.display_multiline_text(info, font_size=14)
                 msgchout = True
             drive.forward(50)
-
-asyncio.run(main())
