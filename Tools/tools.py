@@ -30,11 +30,11 @@ from Tools.RC.computer import main as rcmainc
 # Attempts to import Pi-Top dependent modules, handles ImportError gracefully for non-Pi-Top devices.
 try:
     # Object Detection - Server, Pi-Top dependent
-    from Tools.OBJDET.pitop import main as isosmain
+    from Tools.OBJDET.pi-top import start_client as isosmain
     # Remote Control - Server, Pi-Top dependent
-    from Tools.RC.pitop import main as rcmains
+    from Tools.RC.pi-top import main as rcmains
     # Ultrasonic Measurement - Pi-Top dependent
-    from Tools.USM.main import main as ultrasonicmain
+    from Tools.USM.pi-top import main as ultrasonicmain
 except ImportError:
     # Error message, mainly for non-Pi-Top devices
     print("Errors importing Pi-Top modules.\nIf you're running this on a non-Pi-Top device, please ignore this message.\nOtherwise, ensure all dependencies are installed.")
