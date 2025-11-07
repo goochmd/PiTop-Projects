@@ -22,19 +22,19 @@ import asyncio as aio
 import time
 
 # Object Detection - Controller, No Pi-Top dependence
-from OBJDET.cisoc import main as isocmain
+from Tools.OBJDET.computer import main as isocmain
 
 # Remote Control - Controller, No Pi-Top dependence
-from RC.controller import main as rcmainc
+from Tools.RC.computer import main as rcmainc
 
 # Attempts to import Pi-Top dependent modules, handles ImportError gracefully for non-Pi-Top devices.
 try:
     # Object Detection - Server, Pi-Top dependent
-    from OBJDET.cisos import main as isosmain
+    from Tools.OBJDET.pitop import main as isosmain
     # Remote Control - Server, Pi-Top dependent
-    from RC.server import main as rcmains
+    from Tools.RC.pitop import main as rcmains
     # Ultrasonic Measurement - Pi-Top dependent
-    from USM.ultrasonic import main as ultrasonicmain
+    from Tools.USM.main import main as ultrasonicmain
 except ImportError:
     # Error message, mainly for non-Pi-Top devices
     print("Errors importing Pi-Top modules.\nIf you're running this on a non-Pi-Top device, please ignore this message.\nOtherwise, ensure all dependencies are installed.")
@@ -49,11 +49,18 @@ async def run_color_isoc():
 # Object Detection - Color Isolation Server
 async def run_color_isos():
     # Returns list, indices: 0 = frame, 1 = object locations
-    return await isosmain()
+    try:
+        return await isosmain()
+    except Exception as e:
+        print(f"Error in run_color_isos. Ensure this is Pi-Top hardware.\nError details: {e}")
+        return None
 
 # Ultrasonic Measurement
 async def run_ultrasonic():
-    await ultrasonicmain()
+    try:
+        await ultrasonicmain()
+    except Exception as e:
+        print(f"Error in run_ultrasonic. Ensure this is Pi-Top hardware.\nError details: {e}")
 
 # Remote Control - Client
 async def run_remote_control_client():
@@ -61,5 +68,8 @@ async def run_remote_control_client():
 
 # Remote Control - Server
 async def run_remote_control_server():
-    await rcmains()
+    try:
+        await rcmains()
+    except Exception as e:
+        print(f"Error in Remote Control Server. Ensure this is Pi-Top hardware.\nError details: {e}")
 
