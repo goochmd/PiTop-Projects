@@ -13,17 +13,16 @@ cam = Camera(resolution=(640, 480))
 
 async def send_frames(frame_writer):
     try:
-        while True:
-            frame = np.array(cam.get_frame())
-            frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-            ok, jpeg = cv2.imencode(".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
-            if not ok:
-                await asyncio.sleep(0.03)
-                continue
-            data = jpeg.tobytes()
-            frame_writer.write(struct.pack(">I", len(data)) + data)
-            await frame_writer.drain()
+        frame = np.array(cam.get_frame())
+        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+        ok, jpeg = cv2.imencode(".jpg", frame, [int(cv2.IMWRITE_JPEG_QUALITY), 80])
+        if not ok:
             await asyncio.sleep(0.03)
+        data = jpeg.tobytes()
+        frame_writer.write(struct.pack(">I", len(data)) + data)
+        await frame_writer.drain()
+        await asyncio.sleep(0.03)
+        return frame
     except (ConnectionResetError, asyncio.IncompleteReadError):
         print("[FRAME CLIENT] Connection lost")
     finally:
@@ -35,13 +34,13 @@ async def send_frames(frame_writer):
 
 async def receive_detections(control_reader):
     try:
-        while True:
-            header = await control_reader.readexactly(4)
-            (msg_len,) = struct.unpack(">I", header)
-            payload = await control_reader.readexactly(msg_len)
-            data = json.loads(payload.decode())
-            if data.get("objects") != []:
-                print("Detections from server:", data.get("objects", []))
+        header = await control_reader.readexactly(4)
+        (msg_len,) = struct.unpack(">I", header)
+        payload = await control_reader.readexactly(msg_len)
+        data = json.loads(payload.decode())
+        if data.get("objects") != []:
+            print("Detections from server:", data.get("objects", []))
+            return data.get("objects", [])
     except asyncio.IncompleteReadError:
         print("[CONTROL CLIENT] Server closed control connection")
     finally:
@@ -56,10 +55,12 @@ async def main():
 
     # Keep writer_c alive (server expects control connection to remain open).
     # We don't send anything on it, but keeping the writer prevents server from closing.
-    await asyncio.gather(
-        send_frames(writer_f),
-        receive_detections(reader_c)
-    )
+    while True:
+        detections = await asyncio.gather(
+            send_frames(writer_f),
+            receive_detections(reader_c)
+        )
+        return detections
 
 if __name__ == "__main__":
     try:
