@@ -155,4 +155,8 @@ async def main():
     print(f"Frame server listening on {addr1}")
     print(f"Control server listening on {addr2}")
     async with frame_server, control_server:
+<<<<<<< HEAD
         await asyncio.gather(frame_server.serve_forever(), control_server.serve_forever())
+=======
+        await asyncio.gather(frame_server.serve_forever(), control_server.serve_forever())
+>>>>>>> b8da5acb0049c2398e829feabaef5252e423a3a6

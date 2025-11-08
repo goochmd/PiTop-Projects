@@ -71,10 +71,3 @@ async def start_client(server_ip=SERVER_IP, frame_port=FRAME_PORT, control_port=
         send_frames(writer_f),
         receive_detections(reader_c)
     )
-
-
-if __name__ == "__main__":
-    try:
-        asyncio.run(start_client())
-    except KeyboardInterrupt:
-        print("Stopped by user.")
