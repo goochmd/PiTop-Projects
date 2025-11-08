@@ -30,7 +30,7 @@ async def run_color_isoc():
 async def run_color_isos():
     """Object Detection - Color Isolation Server (Pi-Top side)"""
     try:
-        from Tools.OBJDET.pi_top import start_client as isosmain
+        from Tools.OBJDET.pt import start_client as isosmain
         return await isosmain()
     except ImportError:
         print("Pi-Top-specific dependencies missing. Run this on Pi-Top hardware.")

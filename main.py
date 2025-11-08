@@ -1,6 +1,12 @@
 from Tools.tools import *
 
-pitop = input("pitop or naw? (y/n)")
+try:
+    import pitop
+    pitop = "y"
+    print("Pitop detected")
+except ImportError:
+    pitop = "n"
+    print("Pitop not detected")
 choice = input("What project u wanna run? (OBJDET/LNFOL/RC/USM)")
 if choice == "OBJDET":
     if pitop == "y":
