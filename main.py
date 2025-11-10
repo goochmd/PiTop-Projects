@@ -2,8 +2,9 @@ from Tools.tools import *
 import paramiko
 import asyncio
 
+ip = input("Enter the IP address of the remote Pi-Top (default: 100.87.152.13): ") or "100.87.152.13"
 
-async def ssh_run_remote(function_name, host="100.87.152.13", username="root", password="pi-top", port=22):
+async def ssh_run_remote(function_name, host=ip, username="root", password="pi-top", port=22):
     """
     SSH into a remote machine and run a persistent Python process.
     Keeps reading output until closed.
