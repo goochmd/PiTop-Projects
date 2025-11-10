@@ -1,50 +1,76 @@
 from Tools.tools import *
 import paramiko
+import asyncio
 
-def ssh_run_remote(function_name, host="100.87.152.13", username="root", password="pi-top", port=22):
+
+async def ssh_run_remote(function_name, host="100.87.152.13", username="root", password="pi-top", port=22):
     """
-    SSH into a remote machine and run a Python function from Tools/tools.py
+    SSH into a remote machine and run a persistent Python process.
+    Keeps reading output until closed.
     """
-    print(f"Connecting to {host}...")
+    print(f"[SSH] Connecting to {host}...")
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
     try:
         client.connect(host, port=port, username=username, password=password)
-        print("Connected. Running function remotely...")
+    except Exception as e:
+        print(f"[SSH] Connection failed: {e}")
+        return
 
-        command = f'python3 -c "from repo.Tools.tools import {function_name}; import asyncio; asyncio.run({function_name}())"'
-        stdin, stdout, stderr = client.exec_command(command)
+    print(f"[SSH] Connected. Launching {function_name}() remotely...")
 
-        for line in stdout:
-            print("REMOTE:", line.strip())
-        if stderr != [] or stderr is not None:
-            for line in stderr:
-                print("REMOTE ERR:", line.strip())
+    command = (
+        'cd /root/repo && '
+        'PYTHONPATH=/root/repo nohup python3 -u -c '
+        f'"from Tools.tools import {function_name}; import asyncio; asyncio.run({function_name}())" '
+        '> /root/repo/ssh_log.txt 2>&1 &'
+    )
+
+    stdin, stdout, stderr = client.exec_command(command)
+    print("[SSH] Remote command started in background.")
+    await asyncio.sleep(2)  # let it boot
+    client.close()
+
+
+async def main():
+    try:
+        import pitop
+        print("Pitop detected! Use this on the computer >:(")
+        return
+    except ImportError:
+        print("Pitop not detected")
+
+    choice = input("What project u wanna run? (OBJDET/LNFOL/RC/USM) ").strip().upper()
+
+    try:
+        if choice == "OBJDET":
+            print("[MAIN] Starting Object Detection locally + remotely...")
+            await asyncio.gather(
+                run_color_isoc(),               # local computer (controller)
+                ssh_run_remote("run_color_isos")  # remote Pi-Top (server)
+            )
+
+        elif choice == "RC":
+            print("[MAIN] Starting Remote Control system...")
+            await ssh_run_remote("run_remote_control_server")  # runs on Pi-Top
+            await run_remote_control_client()                  # runs locally
+
+        elif choice == "USM":
+            print("[MAIN] Starting Ultrasonic remotely...")
+            await ssh_run_remote("run_ultrasonic")
+
+        elif choice == "LNFOL":
+            print("not yet beta >:(")
+        else:
+            print("nuh uh")
 
     except Exception as e:
-        print("SSH error:", e)
-    finally:
-        client.close()
+        print(f"[ERROR] Main loop crashed: {e}")
 
-try:
-    import pitop
-    pitop = "y"
-    print("Pitop detected! Use this on the computer >:(")
-    exit()
-except ImportError:
-    pitop = "n"
-    print("Pitop not detected")
-choice = input("What project u wanna run? (OBJDET/LNFOL/RC/USM)")
-if choice == "OBJDET":
-    aio.run(run_color_isoc())
-    ssh_run_remote("run_color_isos")
-elif choice == "LNFOL":
-    print("not yet beta >:(")
-elif choice == "RC":
-    aio.run(run_remote_control_client())
-    ssh_run_remote("run_remote_control_server")
-elif choice == "USM":
-    ssh_run_remote("run_ultrasonic")
-else:
-    print("nuh uh")
+    finally:
+        input("Press Enter to exit...")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
