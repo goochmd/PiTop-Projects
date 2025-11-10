@@ -45,7 +45,7 @@ async def run_color_isos():
 async def run_ultrasonic():
     """Ultrasonic Measurement (Pi-Top side)"""
     try:
-        from Tools.USM.pi_top import main as ultrasonicmain
+        from Tools.USM.pt import main as ultrasonicmain
         await ultrasonicmain()
     except ImportError:
         print("Pi-Top ultrasonic module not found. Run on Pi-Top hardware.")

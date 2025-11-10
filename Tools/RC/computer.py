@@ -17,7 +17,7 @@ import socket, struct, cv2, numpy as np
 from pynput import keyboard
 import threading
 
-HOST = "10.0.21.21"  # Update as needed
+HOST = "100.87.152.13"  # Update as needed
 KEYBIND_PORT = 9999
 VIDEO_PORT = 10000
 

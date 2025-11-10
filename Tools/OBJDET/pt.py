@@ -5,7 +5,7 @@ import numpy as np
 import json
 from pitop import Camera
 
-SERVER_IP = "10.0.21.21" if input("Use default IP? (y/n): ") == "y" else input("Enter your PC IP: ")
+SERVER_IP = "100.118.119.120"
 FRAME_PORT = 11000
 CONTROL_PORT = 11001
 
