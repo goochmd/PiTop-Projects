@@ -2,7 +2,7 @@ from pitop import UltrasonicSensor, Pitop, ServoMotor, Buzzer
 import asyncio as aio
 from pitop.robotics import DriveController
 
-ultrasonic = UltrasonicSensor("D3", threshold_distance=1)
+ultrasonic = UltrasonicSensor("D2", threshold_distance=1)
 drive = DriveController("M2", "M3")
 panservo = ServoMotor("S0")
 buzzer = Buzzer("D1")

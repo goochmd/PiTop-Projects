@@ -23,6 +23,7 @@ async def ssh_run_remote(function_name, host=ip, username="root", password="pi-t
 
     command = (
         'cd /root/repo && '
+        'git stash && git pull'
         'PYTHONPATH=/root/repo nohup python3 -u -c '
         f'"from Tools.tools import {function_name}; import asyncio; asyncio.run({function_name}())" '
         '> /root/repo/ssh_log.txt 2>&1 &'
