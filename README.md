@@ -19,9 +19,10 @@ This repository collects small robotics projects and competition helpers built a
 
 ## Project summaries
 
-### 1) Object Detection — Color Isolation (`Tools/OBJDET`)
- - Goal: detect objects using basic color isolation rather than heavy ML models. These scripts show how to capture frames, apply color thresholding, find contours, and compute object centroids for simple navigation or pick-up tasks.
- - Files: `cisoc.py`, `cisos.py` (two complementary implementations), `testc.py` (runtime/test harness).
+
+
+### Main Launcher — Project Orchestrator (main.py)
+Goal: Serve as the unified entry point for all Pi-Top tools and projects. This script automatically detects whether it’s running on the Pi-Top or a regular computer, and then launches the correct components (local client or remote server) accordingly.
 
 ### 2) Ultrasonic Movement (`Tools/USM`)
  - Goal: use ultrasonic distance data to drive movement decisions (stop, avoid, or follow). The `ultrasonic.py` file contains sensor read loops, smoothing/filtering and basic movement commands you can hook into your motor controller.
