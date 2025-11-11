@@ -20,9 +20,7 @@ async def main():
             info = "Obstacle Detected! Stopping."
             if not msgchin:
                 led.on()
-                buzzer.on()
-                time.sleep(0.5)
-                buzzer.off()
+                buzzer.beep(0.1, 0.1, 3)
                 print(info)
                 miniscreen.display_multiline_text(info, font_size=14)
                 msgchin = True
