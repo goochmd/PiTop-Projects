@@ -21,7 +21,7 @@ async def ssh_run_remote(function_name, host="100.87.152.13", username="root", p
 
     command = (
         'cd /root/repo && '
-        'git stash && git pull'
+        'git stash && git pull &&'
         'PYTHONPATH=/root/repo python3 -u -c '
         f'"from Tools.tools import {function_name}; '
         'import asyncio; '
