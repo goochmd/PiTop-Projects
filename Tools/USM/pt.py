@@ -3,7 +3,7 @@ import asyncio as aio
 from pitop.robotics import DriveController
 
 ultrasonic = UltrasonicSensor("D2", threshold_distance=1)
-drive = DriveController("M0", "M1")
+drive = DriveController("M1", "M0")
 panservo = ServoMotor("S0")
 buzzer = Buzzer("D1")
 led = LED("D0")
@@ -18,8 +18,10 @@ async def main():
             msgchout = False
             info = "Obstacle Detected! Stopping."
             if not msgchin:
-                buzzer.blink(1, 1, 2)
                 led.on()
+                buzzer.on()
+                time.sleep(0.5)
+                buzzer.off()
                 print(info)
                 miniscreen.display_multiline_text(info, font_size=14)
                 msgchin = True

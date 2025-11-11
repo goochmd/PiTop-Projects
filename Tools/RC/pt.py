@@ -25,7 +25,7 @@ uss = UltrasonicSensor("D3", threshold_distance=1, max_distance=300)
 brakelight = LED("D0")
 panservo = ServoMotor("S0")
 tiltservo = ServoMotor("S1")
-drive = DriveController(left_motor_port="M2", right_motor_port="M3")
+drive = DriveController(left_motor_port="M1", right_motor_port="M0")
 
 state = {"keys": set(), "running": True, "pan_angle": 0, "tilt_angle": 0}
 
