@@ -16,8 +16,6 @@ It requires the Pi-top server code to be running and accessible on the specified
 import socket, struct, cv2, numpy as np
 from pynput import keyboard
 import threading
-
-HOST = "100.87.152.13"  # Update as needed
 KEYBIND_PORT = 9999
 VIDEO_PORT = 10000
 
@@ -108,13 +106,12 @@ def video_thread():
             pass
         cv2.destroyAllWindows()
 
-def main():
+def main(ip: str):
     global keybind_sock, video_sock
-
     try:
         keybind_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        keybind_sock.connect((HOST, KEYBIND_PORT))
-        print(f"Connected to keybind server {HOST} at port {KEYBIND_PORT}")
+        keybind_sock.connect((ip, KEYBIND_PORT))
+        print(f"Connected to keybind server {ip} at port {KEYBIND_PORT}")
     except Exception:
         print(f"Connection to keybind server timed out or failed!")
 

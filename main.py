@@ -71,7 +71,8 @@ async def main():
         return
     except ImportError:
         print("Pitop not detected")
-
+    ip = input("Enter the Pi-Top IP address (default: 100.87.152.13): ").strip() or "100.87.152.13"
+    ownip = input("Enter your computer's IP address (for OBJDET, default: 100.118.119.120):").strip() or "100.118.119.120"
     choice = input("What project u wanna run? (OBJDET/LNFOL/RC/USM) ").strip().upper()
 
     try:
@@ -86,7 +87,7 @@ async def main():
             print("[MAIN] Starting Remote Control system...")
             await asyncio.gather(
                 ssh_run_remote("run_remote_control_server"),
-                run_remote_control_client()
+                run_remote_control_client(ip)
             )
 
         elif choice == "USM":

@@ -4,8 +4,6 @@ import cv2
 import numpy as np
 import json
 from pitop import Camera
-
-SERVER_IP = "100.118.119.120"
 FRAME_PORT = 11000
 CONTROL_PORT = 11001
 
@@ -58,12 +56,12 @@ async def receive_detections(control_reader):
         print(f"[CONTROL CLIENT] Error: {e}")
 
 
-async def start_client(server_ip=SERVER_IP, frame_port=FRAME_PORT, control_port=CONTROL_PORT):
+async def start_client(ip, frame_port=FRAME_PORT, control_port=CONTROL_PORT):
     """Launch both channels for use by tools.py or directly."""
     print("Connecting frame channel...")
-    _, writer_f = await asyncio.open_connection(server_ip, frame_port)
+    _, writer_f = await asyncio.open_connection(ip, frame_port)
     print("Connecting control channel...")
-    reader_c, _ = await asyncio.open_connection(server_ip, control_port)
+    reader_c, _ = await asyncio.open_connection(ip, control_port)
     print("Both channels connected. Streaming...")
 
     # Run both coroutines until one fails

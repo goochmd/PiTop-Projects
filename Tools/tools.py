@@ -56,15 +56,15 @@ async def run_ultrasonic():
 # ===========================
 # REMOTE CONTROL FUNCTIONS
 # ===========================
-async def run_remote_control_client():
+async def run_remote_control_client(ip):
     """Remote Control - Client (Computer side)"""
     from Tools.RC.computer import main as rcmainc
-    await rcmainc()
+    await rcmainc(ip)
 
 async def run_remote_control_server():
     """Remote Control - Server (Pi-Top side)"""
     try:
-        from Tools.RC.pi_top import main as rcmains
+        from Tools.RC.pt import main as rcmains
         await rcmains()
     except ImportError:
         print("Pi-Top remote control module not found. Run on Pi-Top hardware.")
