@@ -85,8 +85,8 @@ async def main():
         elif choice == "RC":
             print("[MAIN] Starting Remote Control system...")
             await asyncio.gather(
-                run_remote_control_client(),
-                ssh_run_remote("run_remote_control_server")
+                ssh_run_remote("run_remote_control_server"),
+                run_remote_control_client()
             )
 
         elif choice == "USM":
