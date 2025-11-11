@@ -1,4 +1,4 @@
-from pitop import UltrasonicSensor, Pitop, ServoMotor, Buzzer
+from pitop import UltrasonicSensor, Pitop, ServoMotor, Buzzer, LED
 import asyncio as aio
 from pitop.robotics import DriveController
 

@@ -2,12 +2,10 @@ from Tools.tools import *
 import paramiko
 import asyncio
 
-ip = input("Enter the IP address of the remote Pi-Top (default: 100.87.152.13): ") or "100.87.152.13"
-
-async def ssh_run_remote(function_name, host=ip, username="root", password="pi-top", port=22):
+async def ssh_run_remote(function_name, host="100.87.152.13", username="root", password="pi-top", port=22):
     """
-    SSH into a remote machine and run a persistent Python process.
-    Keeps reading output until closed.
+    SSH into a remote machine, run a Python async function,
+    and keep streaming output until the function ends or is interrupted.
     """
     print(f"[SSH] Connecting to {host}...")
     client = paramiko.SSHClient()
@@ -24,15 +22,46 @@ async def ssh_run_remote(function_name, host=ip, username="root", password="pi-t
     command = (
         'cd /root/repo && '
         'git stash && git pull'
-        'PYTHONPATH=/root/repo nohup python3 -u -c '
-        f'"from Tools.tools import {function_name}; import asyncio; asyncio.run({function_name}())" '
-        '> /root/repo/ssh_log.txt 2>&1 &'
+        'PYTHONPATH=/root/repo python3 -u -c '
+        f'"from Tools.tools import {function_name}; '
+        'import asyncio; '
+        f'asyncio.run({function_name}())"'
     )
 
-    stdin, stdout, stderr = client.exec_command(command)
-    print("[SSH] Remote command started in background.")
-    await asyncio.sleep(2)  # let it boot
-    client.close()
+    transport = client.get_transport()
+    if not transport:
+        print("[SSH] No transport available!")
+        return
+
+    channel = transport.open_session()
+    channel.exec_command(command)
+    print("[SSH] Remote function started. Streaming output...\n")
+
+    try:
+        while True:
+            if channel.recv_ready():
+                out = channel.recv(4096).decode(errors="ignore")
+                if out.strip():
+                    print("[REMOTE]", out.strip())
+
+            if channel.recv_stderr_ready():
+                err = channel.recv_stderr(4096).decode(errors="ignore")
+                if err.strip():
+                    print("[REMOTE ERR]", err.strip())
+
+            if channel.exit_status_ready():
+                print("[SSH] Remote process exited.")
+                break
+
+            await asyncio.sleep(0.2)
+
+    except KeyboardInterrupt:
+        print("[SSH] Interrupted by user. Closing connection...")
+
+    finally:
+        channel.close()
+        client.close()
+        print("[SSH] Session closed.")
 
 
 async def main():
@@ -49,14 +78,16 @@ async def main():
         if choice == "OBJDET":
             print("[MAIN] Starting Object Detection locally + remotely...")
             await asyncio.gather(
-                run_color_isoc(),               # local computer (controller)
-                ssh_run_remote("run_color_isos")  # remote Pi-Top (server)
+                run_color_isoc(),
+                ssh_run_remote("run_color_isos")
             )
 
         elif choice == "RC":
             print("[MAIN] Starting Remote Control system...")
-            await ssh_run_remote("run_remote_control_server")  # runs on Pi-Top
-            await run_remote_control_client()                  # runs locally
+            await asyncio.gather(
+                run_remote_control_client(),
+                ssh_run_remote("run_remote_control_server")
+            )
 
         elif choice == "USM":
             print("[MAIN] Starting Ultrasonic remotely...")
